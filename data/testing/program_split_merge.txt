@@ -1,0 +1,12 @@
+setel 0 202
+setel 0 203
+setel 0 206
+setel 0 208
+clrel 0 206
+clrel 0 208
+setel 0 204
+clrel 0 202
+setel 0 205
+clrel 0 203
+setel 0 204
+clrel 0 205

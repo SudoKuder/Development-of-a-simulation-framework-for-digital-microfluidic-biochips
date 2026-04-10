@@ -1,0 +1,13 @@
+setel 0 302
+setel 0 303
+clrel 0 302
+setel 0 304
+clrel 0 303
+setel 0 305
+clrel 0 304
+setel 0 304
+clrel 0 305
+setel 0 303
+clrel 0 304
+setel 0 302
+clrel 0 303

@@ -1,0 +1,45 @@
+{
+  "information": {
+    "platform_name": "Heater Bubble Showcase",
+    "platform_type": "showcase",
+    "platform_ID": 2001,
+    "sizeX": 160,
+    "sizeY": 100
+  },
+  "electrodes": [
+    {"name": "h1", "ID": 1, "electrodeID": 301, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "h2", "ID": 2, "electrodeID": 302, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "h3", "ID": 3, "electrodeID": 303, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "h4", "ID": 4, "electrodeID": 304, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "h5", "ID": 5, "electrodeID": 305, "driverID": 0, "shape": 0, "positionX": 100, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []}
+  ],
+  "droplets": [
+    {"id": 1, "name": "heat_d", "positionX": 50, "positionY": 50, "sizeX": 16, "sizeY": 16, "color": "#ff9900", "temperature": 35.0, "electrodeID": 302}
+  ],
+  "actuators": [
+    {
+      "id": 1,
+      "actuatorID": 1,
+      "type": "heater",
+      "positionX": 40,
+      "positionY": 40,
+      "sizeX": 60,
+      "sizeY": 20,
+      "valueActualTemperature": 30.0,
+      "valueDesiredTemperature": 98.0,
+      "valuePowerStatus": 1
+    }
+  ],
+  "sensors": [
+    {
+      "id": 1,
+      "sensorID": 1,
+      "type": "temperature",
+      "positionX": 40,
+      "positionY": 40,
+      "sizeX": 60,
+      "sizeY": 20,
+      "valueTemperature": 30.0
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "information": {
+    "platform_name": "Dual Driver Routing",
+    "platform_type": "showcase",
+    "platform_ID": 2002,
+    "sizeX": 180,
+    "sizeY": 120
+  },
+  "electrodes": [
+    {"name": "d0_a", "ID": 1, "electrodeID": 401, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 30, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "d0_b", "ID": 2, "electrodeID": 402, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 30, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "d0_c", "ID": 3, "electrodeID": 403, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 30, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+
+    {"name": "d1_a", "ID": 4, "electrodeID": 401, "driverID": 1, "shape": 0, "positionX": 100, "positionY": 30, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "d1_b", "ID": 5, "electrodeID": 402, "driverID": 1, "shape": 0, "positionX": 120, "positionY": 30, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "d1_c", "ID": 6, "electrodeID": 403, "driverID": 1, "shape": 0, "positionX": 140, "positionY": 30, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []}
+  ],
+  "droplets": [
+    {"id": 1, "name": "left_lane", "positionX": 30, "positionY": 40, "sizeX": 16, "sizeY": 16, "color": "#33aaff", "temperature": 22.0, "electrodeID": 401},
+    {"id": 2, "name": "right_lane", "positionX": 110, "positionY": 40, "sizeX": 16, "sizeY": 16, "color": "#cc44ff", "temperature": 22.0, "electrodeID": 401}
+  ],
+  "actuators": [],
+  "sensors": [
+    {
+      "id": 1,
+      "sensorID": 1,
+      "type": "RGB_color",
+      "positionX": 100,
+      "positionY": 30,
+      "sizeX": 60,
+      "sizeY": 20,
+      "valueRed": 0,
+      "valueGreen": 0,
+      "valueBlue": 0
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "information": {
+    "platform_name": "Small Cross Route",
+    "platform_type": "testing",
+    "platform_ID": 1001,
+    "sizeX": 120,
+    "sizeY": 120
+  },
+  "electrodes": [
+    {"name": "e1", "ID": 1, "electrodeID": 101, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e2", "ID": 2, "electrodeID": 102, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e3", "ID": 3, "electrodeID": 103, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e4", "ID": 4, "electrodeID": 104, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e5", "ID": 5, "electrodeID": 105, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e6", "ID": 6, "electrodeID": 106, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e7", "ID": 7, "electrodeID": 107, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e8", "ID": 8, "electrodeID": 108, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e9", "ID": 9, "electrodeID": 109, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []}
+  ],
+  "droplets": [
+    {"id": 1, "name": "d1", "positionX": 30, "positionY": 30, "sizeX": 16, "sizeY": 16, "color": "#ff5555", "temperature": 22.0, "electrodeID": 101}
+  ],
+  "actuators": [],
+  "sensors": []
+}

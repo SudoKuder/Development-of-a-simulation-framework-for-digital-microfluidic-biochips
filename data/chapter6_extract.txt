@@ -1,0 +1,1040 @@
+
+
+===== PDF PAGE 88 =====
+74 Graphical User Interface
+behind the actual platform. At this time, we see two potential ways of tackling
+this issue:
+• Buffering
+By executing multiple data transfers and then buffering them on the GUI,
+keeping X iterations of data, we can eliminate the extra time, since the
+data has already been transferred.
+• Percentage Speed-up
+By finding the percentage of the data transfer cycle time, is of the actual
+simulation time difference ∆t, we can speed up the time by a corresponding
+percentage amount.
+The potential solutions to the proposed problem does present their own issues.
+The buffering solution presents the issue where the buffer needs to be recalcu-
+lated if the simulation engine data changes during the simulation. Another issue
+with this method is that if the execution time between actions in the simulation
+engine is significantly small, our buffer would have to include every simulation
+engine execution, meaning that we essentially first run the simulation, save the
+data, and then replays the simulation via the GUI.
+The percentage speed-up solution will only work when ∆ t is greater than
+the data transfer time. Otherwise, execution would appear instantaneous in the
+GUI. As an example, if ∆ t is 0.04 seconds, the percentage of the data transfer
+time would be over 100 percent since ∆ t is less than the data execution time
+of 0.07 seconds, meaning that the percentage speed-up would be 100 percent,
+meaning no time should be waited.
+None of these solutions are currently implemented but could be implemented.
+The percentage speed-up solution would be the most straightforward implemen-
+tation, but the buffering solution would most likely be the better solution.
+6.3 Sketch Panel
+This section presents and describes the Sketch Panel and the Sketch Panel Man-
+ager, as described and displayed in Figure 6.3.
+
+===== PDF PAGE 89 =====
+6.3 Sketch Panel 75
+6.3.1 Design
+The Sketch Panels’ overall design and placement in relation to the rest of the
+GUI can be seen in Figure6.2, in Figure 6.3, the general placement and con-
+nection between the Sketch Panel Manager and Sketch Panel can be seen. In
+Figure 6.3we can see that the Sketch Panel Manager is a central part of the
+backend; it essentially acts as the main component for which all other backend
+components are called. This is because the Sketch Panel Manager is in control
+of the Simulation representation, which is essentially the main purpose of the
+GUI. This also means that the Sketch Panel is the main part of the frontend of
+the GUI since this is the container for which the actual simulation of the DMF
+platform will be shown.
+The Sketch Panel can be split into two parts, a header containing the DMF
+platform board name and the current simulation time and a canvas housing
+the p5js sketch. Within this canvas, the p5js visual framework is utilized to
+display the digital representation of the DMF platform. The p5js framework is
+contained in the Sketch Panel Manager, which updates the canvas dynamically.
+6.3.2 Implementation
+The structure of the Sketch Panel is built up by HTML code, the HTML code
+can be seen in Code Snippet6.5.
+1 < div id = " sketchPanel " >
+2 < div id = " simulatorView " >
+3 < div id = " simulatorHeader " >
+4 /* Will be updated with the correct board name */
+5 < span > BOARD NAME </ span >
+6 <div >
+7 /* Will display the current simulation time */
+8 < span > Simulation Time : </ span >
+9 < span id = " simulatorTime " > </ span >
+10 </ div >
+11 </ div >
+12 /*
+13 * The div with id ’ container ’ is where
+14 * the p5js canvas will be pro grammati cally added later
+15 */
+16 < div id = ’ container ’ > </ div >
+17 </ div >
+18 </ div >
+Code Snippet 6.5: Shows the HTML behind the Sketch Panel.
+
+===== PDF PAGE 90 =====
+76 Graphical User Interface
+The HTML code is located within the Razor page called SimulatorPage.
+The HTML structure contains different elements, which are initialized during
+the setup of the Sketch Panel Manager; this happens when the page is first
+loaded. The elements are as follows:
+• Board Name - Updated to fit the DMF platform name contained in the
+board data.
+• Current Simulation Time - Updated dynamically.
+• p5js Sketch container - Updated dynamically but initiated to the initial
+simulation data at the start of the simulation.
+All of these elements can also be found in Code Snippet 6.5.
+We load and populate these elements during the initialization of the GUI. At
+this point, our GUI Broker has already received its first batch of Simulation
+Engine data, meaning we have access to the initial simulation positions at time
+0. We can now populate the Board Name to be the one which is passed in with
+the data and corresponds to the actual DMF platform name and the simulation
+time, which can now be set to 0.
+To initialize the p5js Sketch Container, we have to create a new p5js instance,
+which can be done as seen in the Code Snippet 6.6:
+1 /* *
+2 * The function setp5 initializes the p5js instance ( the sketch ) ,
+3 * and binds it to the element with id ’ container ’.
+4 */
+5 window . setp5 = () = > {
+6 new p5 ( sketch , window . document . getElementById ( ’ container ’) ) ;
+7 return true ;
+8 };
+Code Snippet 6.6: Shows the p5js setup.
+The function is located in JavaScript; however, it is bound to the window scope,
+meaning it is global and accessible by the whole GUI. This furthermore means
+that the function can be called directly from the Razor page (see section 6.2 for
+data exchange) upon the first Razor page render.
+By now, we have a Sketch Panel with a header containing initial information
+about the DMF platform simulation and a canvas housing a p5js instance; how-
+ever, nothing has been drawn onto the canvas yet. To do this, we have to take
+a look at the Sketch Panel Manager.
+
+===== PDF PAGE 91 =====
+6.3 Sketch Panel 77
+6.3.3 Sketch Panel Manager
+This section describes the core applications of the Sketch Panel Manager, show-
+ing how we utilize the p5js framework to visually represent the DMF platform
+simulation as close to reality as possible.
+Design
+The Sketch Panel Manager manages the Sketch Panel, utilizing the p5js frame-
+work to visually represent the DMF platform simulation. The Sketch Panel
+Manager draws the DMF platform information onto the Sketch Panel canvas,
+and the information comes from the Simulation Engine. The Sketch Panel
+Manager should be able to draw DMF platform elements, such as electrodes,
+droplets etc. and also components, such as sensors and actuators, onto the can-
+vas. Furthermore, the Sketch Panel Manager should supply animation logic to
+the droplets. The simulation elements should be represented in such a way that
+they are recognizable and distinguishable.
+We have designed the following types and functions, to accompany the design
+for the Sketch Panel Manager.
+1 /* p5js functions */
+2 function setup : () -> ()
+3 function draw : () -> ()
+4
+5 /* Initialize function */
+6 function init_board : () -> ()
+7
+8 /* Draw functions */
+9 function draw_electrode : electrode -> ()
+10 function draw_droplet : droplet -> ()
+11 function d ra w _ dr o p le t _ gr o up : int -> ()
+12 function draw_actuator : actuator -> ()
+13 function draw_sensor : sensor -> ()
+14 function draw_bubble : bubble -> ()
+15
+16 /* Animation functions */
+17 function a n i m a t e _ d r o p l e t _ g r o u p : droplet -> ()
+Code Snippet 6.7: Shows functions for the Sketch Panel Manager, using a
+descriptive pseudo code.
+The input and output of the Sketch Panel Manager are described in Code Snip-
+pet 6.7. We continue to present a short explanation of their functionality.
+
+===== PDF PAGE 92 =====
+78 Graphical User Interface
+p5js functions
+• setup()
+The setup function is part of the p5js framework. It is called when the p5js
+instance, also referred to as the sketch, is first initialized; this function is
+used to setup the p5js instance canvas, which is what will be displayed in
+the Sketch Panel canvas.
+• draw()
+The draw function is part of the p5js framework. The function is called
+every frame of the sketch and is used to update the sketch canvas elements
+dynamically while the sketch is running.
+Initialize function
+• init board()
+The init board function is used to initialize various properties, such as the
+initial board elements (electrodes, droplets, actuators, sensors etc.).
+Draw functions
+• draw electrode(electrode)
+Controls the drawing of the electrodes onto the Sketch Panel canvas, uti-
+lizing the p5js framework. Most electrodes are pure squares; however,
+some electrode has other shapes, and therefore this function should also
+support arbitrary polygonal electrode shapes.
+• draw droplet(droplet)
+Controls the drawing of individual droplets; the droplets are represented
+as circles, where the size correlates to their volume. The droplets have
+unique colours, which are contained from the data passed by the Simula-
+tion Engine.
+• draw droplet group(int)
+Controls the drawing of droplet groupings, meaning individual droplets,
+which are close enough to be considered one droplet, should be drawn
+as one droplet. The groups will be drawn based on the positions of the
+individual droplets which make up the droplet groups.
+• draw actuator(actuator)
+Controls the drawing of actuators, e.g. heaters, distinguishable by colour
+and shape within the simulation contained in the Sketch Panel.
+• draw sensor(sensor)
+Controls the drawing of sensors, e.g. temperature and RGB sensors, dis-
+tinguishable by colour and shape within the simulation contained in the
+Sketch Panel.
+• draw bubble(bubble)
+Controls the drawing of bubbles, the bubbles are represented by a circle.
+
+===== PDF PAGE 93 =====
+6.3 Sketch Panel 79
+Animation function
+• animate droplet group(droplet)
+Controls procedural animation applied to every droplet group, which al-
+lows for smooth and realistic movement of the droplet groups.
+Every function described above utilizes simulation DMF platform data, which
+is sent directly from the Simulation Engine to the GUI, as presented in Section
+6.2.
+6.3.4 Drawing Simulation Elements
+This section will describe how the Sketch Panel Manager uses the p5js framework
+to draw simulation elements (electrodes, actuators, sensors, droplets) onto the
+Sketch Panel canvas.
+Design
+In order to preserve distinguishability, some elements, specifically actuators and
+sensors, deviate from what is observed in reality. By allowing for this deviation,
+we are able to visually represent the elements in such a way that the user can
+easily distinguish between the elements.
+The visualization of the different elements is as the following:
+• Electrodes - Arbitrary polygons, in most cases squares, with a white back-
+ground and black outline.
+• Actuators - Rectangles with a transparent red background and a red out-
+line.
+• Sensors - Squares with a transparent blue background and blue outline.
+• Droplets - Circles with a black outline and background corresponding to
+the colour given by the data from the Simulator Engine.
+
+===== PDF PAGE 94 =====
+80 Graphical User Interface
+Figure 6.5: Design overview of the different simulation elements.
+As described in the Simulation Engine chapter 5, an electrode can either be
+turned on or off, and this should be depicted in the GUI. To distinguish between
+an off electrode and an on electrode, the on electrode will have a red background
+instead of the white background, as seen in Figure 6.5.
+Figure 6.6: Shows an active electrode.
+All elements are drawn by the data passed to the GUI from the Simulation
+Engine, see section 6.2, this data includes positional data and shape data.
+Some of the elements drawn onto the canvas, such as electrodes, actuators and
+sensors, are static, meaning after they are drawn once, they will visually stay
+the same for the rest of the simulation. Therefore it is redundant to keep recal-
+culating and drawing these static elements every frame of the simulation. To
+solve this, we can introduce layers, which we can think of as an image. We
+can then draw the static elements onto the layer once when the GUI is initially
+loaded and then merely redraw the layer as an image for every update.
+Implementation
+To draw the elements onto the Sketch Panel canvas, we utilize the p5js frame-
+work. Within this framework, there are built-in draw calls for generic geometric
+shapes, such as rectangles and ellipses. We can use these draw calls to draw the
+square electrodes, actuators, sensors and droplets.
+
+===== PDF PAGE 95 =====
+6.3 Sketch Panel 81
+Drawing Electrodes
+To tackle the case of drawing the electrodes, we first have to distinguish between
+square electrodes and polygonal electrodes. To distinguish between the two, we
+can use a variable stored within the electrode data type, called shape, see Code
+Snippet 6.1. The variable shape is an integer that is either 0 or 1, where 0 indi-
+cates that the electrode is a square shape and 1 that the electrode is a polygonal
+shape. By checking this variable’s value, we can for each electrode see if it’s a
+square shape or polygonal shape. Square electrodes are rather straightforward
+since we can use the rectangle draw call to draw the square representing the
+electrode.
+The draw call for drawing square electrodes can be seen in Code Snippet 6.8.
+1 function draw_electrode () {
+2 for ( let i = 0; i < gui_broker . electrodes . length ; i ++) {
+3 let electrode = gui_broker . electrodes [ i ];
+4
+5 // Border Color
+6 layer_electrode . stroke ( draw_config . electrode . borderColor ) ;
+7
+8 // Border Width
+9 layer_electrode . strokeWeight ( draw_config . electrode . borderWidth )
+;
+10
+11 // Fills the Background
+12 layer_electrode . fill ( draw_config . electrode . backgroundColor ) ;
+13
+14 // Check the electrode shape
+15 if ( electrode . shape == 1) {
+16 d r a w _ p o l y g o n _ e l e c t r o d e ( electrode . positionX , electrode .
+positionY , electrode . corners ) ;
+17 } else {
+18 // Using rect to draw a rectangle
+19 layer_electrode . rect ( electrode . positionX , electrode .
+positionY , electrode . sizeX , electrode . sizeY ) ;
+20 }
+21 }
+22 }
+Code Snippet 6.8: Function responsible for handling the drawing of square
+shaped electrodes onto a layer.
+In Code Snippet 6.8, on line 19, the call to the p5js rect function can be seen,
+which draws the actual square onto the Sketch Panel canvas. On lines 6, 9 and
+12, respectively, the styling of the electrode is defined; here, stroke is equivalent
+to the border colour, strokeWeight is equivalent to the border width and fill
+
+===== PDF PAGE 96 =====
+82 Graphical User Interface
+is equivalent to the background. All of the styling calls are part of the p5js
+framework.
+Tackling the case of drawing polygonal electrode shapes, we need to be able
+to support arbitrary shapes, to do this we can utilize another p5js functionality
+called shapes. This functionality allows us to begin a shape add the necessary
+vertexes and then end the shape.
+1 function d r a w _ p o l y g o n _ e l e c t r o d e ( posX , posY , corners ) {
+2 // Begin the polygon shape
+3 layer_electrode . beginShape () ;
+4
+5 // Create a shape with vertexes corresponding to the corners array
+6 for ( let i = 0; i < corners . length ; i ++) {
+7 layer_electrode . vertex ( posX + corners [ i ][0] + 0.5 , posY +
+corners [ i ][1] + 0.5) ;
+8 }
+9
+10 // End the polygon shape
+11 layer_electrode . endShape ( l a y e r _ e l e c t r o d e _ s h a p e . CLOSE ) ;
+12 }
+Code Snippet 6.9: Function responsible for handling the drawing of
+polygonal shaped electrodes onto a layer.
+We are now able to draw both square and polygonal electrodes onto a layer. To
+draw the electrode layer, we can merely use the p5js functionality image(layer)
+to draw the layer as an image onto the Sketch Panel canvas. By running the
+draw calls, seen in Code Snippet 6.8 and 6.9, on the data passed to the GUI from
+the Simulator Engine, Figure 6.7 shows the canvas with the electrodes drawn.
+
+===== PDF PAGE 97 =====
+6.3 Sketch Panel 83
+Figure 6.7: DMF platform board drawn onto the Sketch Panel canvas with all
+electrodes drawn.
+We now have all electrodes drawn onto a layer since the shapes are static;
+however, if an electrode is active, we want to represent it with a red background,
+as described in the design section. To do this, we can reuse the draw calls from
+Code Snippet 6.8 and 6.9, but skipping all non-active electrodes, meaning those
+with the status value set to 0, and redrawing all active electrodes with the fill
+styling set to red. The active electrodes are drawn on top of the image containing
+the electrode shapes, seen in Figure 6.8.
+Figure 6.8: DMF platform board drawn onto the Sketch Panel canvas with
+active electrodes drawn.
+
+===== PDF PAGE 98 =====
+84 Graphical User Interface
+Drawing Actuators and Sensors
+Next, we tackle the task of drawing actuators and sensors; as for the case of
+the electrodes, these elements are also static, meaning they both will be drawn
+onto layers once when the GUI is initialized and thereafter drawn using the p5js
+image(layer) functionality. As to drawing the actuators and sensors onto the
+layers, we utilize the p5js rect draw function since both of these elements are
+represented as rectangles. Figure 6.9 shows an example of three actuators and
+two sensors.
+Figure 6.9: DMF platform board drawn onto the Sketch Panel canvas with
+actuators (red) and sensors (blue).
+Drawing Droplets
+Continuing, we tackle the task of drawing droplets, which are dynamic elements,
+meaning they will not stay in the same position during the whole of the simula-
+tion. To draw the droplets we use the p5js function ellipse, which allows us to
+draw circles.
+
+===== PDF PAGE 99 =====
+6.3 Sketch Panel 85
+1 // Function to draw droplets
+2 function draw_droplet () {
+3 for ( let i = 0; i < gui_broker . droplets . length ; i ++) {
+4 let droplet = gui_broker . droplets [ i ];
+5 p . fill ( droplet . color ) ;
+6 p . stroke ( draw_config . droplet . borderColor ) ;
+7 p . strokeWeight ( draw_config . droplet . borderWidth ) ;
+8 p . ellipse ( droplet . positionX , droplet . positionY , droplet . sizeX ,
+droplet . sizeY ) ;
+9 }
+10 }
+Code Snippet 6.10: Function responsible for handling the drawing of
+Droplets.
+As with the case of the electrodes, we utilize p5js to style the droplets, this
+includes the background colour, border colour and border thickness. After a
+call to the droplet draw function, the following is drawn onto the Sketch Panel
+canvas.
+Figure 6.10: Droplets drawn onto the Sketch Panel canvas.
+By this point, we are able to draw all elements from the Simulation Engine,
+and can now represent the full image of the Simulation Engine’s data. However,
+this image is by itself not very realistic looking, since the Simulation Engine
+represents groups of droplets as multiple individual droplets, located next to
+one another.
+
+===== PDF PAGE 100 =====
+86 Graphical User Interface
+Figure 6.11: Droplets drawn as represented in the Simulator Engine data.
+This is not very realistic according to how the droplets look in the actual DMF
+platform. To achieve realistic looking droplet groupings, we have to alter how
+the Sketch Panel Manager draws droplet groups onto the Sketch Panel canvas.
+6.3.5 Droplet Grouping
+This section will describe how the GUI draws droplet groups, the drawing of
+droplet groups is necessary to allow for more realistic and recognizable droplet
+compositions and shapes.
+Design
+When tasked to create visually realistic droplets, we have to reconsider how
+we visually represent the droplet groups. Droplet groups are considered as
+individual droplets located directly besides one another. The following image
+shows figure 6.11 where there is inserted a red bounding box around every
+multiple of droplets considered a group of droplets.
+
+===== PDF PAGE 101 =====
+6.3 Sketch Panel 87
+Figure 6.12: Droplet groups shown by a red bounding box around the indi-
+vidual droplets.
+The droplets considered within the same droplet group has a groupID equivalent
+to that of the groups, this groupID is given by the Simulator Engine and passed
+onto the GUI through the DMF platform data exhange, described in section 6.2.
+To emulate the correct droplet grouping behaviour, we want to draw all droplets
+with the same groupID together as one droplet, instead of as multiple individual
+droplets. To achieve this, we have to design a custom traversal algorithm.
+Designing the Grouping Algorithm
+To draw the multiple individual droplets as one droplet, we first have to get
+data points enclosing the individual droplets within one final shape. This can
+be achieved by traversing the circumference of the droplet groups gathering
+points at every corner of the circumference. This traversal should however be
+done in the same direction around the droplet groups, such that the resulting set
+of points are ordered, and is essentially a list of vertices, from which a shape can
+be drawn. By utilizing the positional and sizing properties within the droplet
+data type, we can find the four points, which creates a bounding square around
+the droplet.
+
+===== PDF PAGE 102 =====
+88 Graphical User Interface
+Figure 6.13: Droplet with the four points, which describe the bounding square
+around a droplet.
+These four points creates the basis of the data, and by running the algorithm on
+the set of droplets in the current group, we can gather the correlating bounding
+point, to the current corner found in the circumference. However, we are still
+facing two issues, firstly, when introducing multiple droplets within a group, we
+see that the bounding points for each of the droplets overlap with one another.
+Figure 6.14: Bounding droplet points in a L shaped droplet group.
+Secondly, we still have to figure out how we can traverse this set of droplets in
+
+===== PDF PAGE 103 =====
+6.3 Sketch Panel 89
+a way that makes the final points ordered so that they can be used as a set of
+vertices.
+Figure 6.15: Traversal, in order, on the droplet points in an L-shaped droplet
+group.
+The first issue does not present the most significant task, we can be selective
+in how we choose to gather points, making sure that we only gather one point,
+even though multiple points can be present in an overlap. The second issue is a
+bit more complex.
+To traverse the droplet group in an ordered direction, we start by selecting
+a droplet which is missing at least one neighbour. By doing this, we assure that
+at least one point on the given droplet is part of the circumference of the final
+shape. We then select one of the points, on the side with no neighbour, as our
+starting point since we know this starting point to be part of the circumference.
+From the starting point, we then check to see if there is any droplet (neighbour),
+within the same droplet group, in four different directions. This can be seen in
+Figure 6.16.
+
+===== PDF PAGE 104 =====
+90 Graphical User Interface
+Figure 6.16: Method used for finding the next point while traversing droplet
+groups.
+Figure 6.16 shows the method we use for traversing the droplet group circumfer-
+ence here s0 is our chosen starter point. From s0 we create a type of coordinate
+system, where for each quadrant, we check to see if the quadrant is empty,
+meaning containing no droplet, which is neighbour of the current droplet (bot-
+tom right), and then check if any of the non-diagonal fields contains a droplet.
+For s0, the case where the top right is empty and the bottom right is not empty
+is true, meaning the next valid point is to the right. We check for the cases in
+the direction of the arrow depicted in the figure, which allows us to traverse the
+droplet group in the same direction, resulting in an ordered list of points.
+With information about the neighbours, we can find the next point on the
+circumference and add the precise point to a list of the final vertices. By choosing
+the next point in a clockwise manner, we can assure that the direction is held,
+as seen in Figure 6.15. We now have a set of vertices for which we can draw
+a shape that encloses the entire group of droplets. The last step needed for
+creating a droplet-like structure of the droplet groups is to round the corners of
+the shape. After these steps, the algorithm should, in theory, be able to draw
+what is seen in Figure 6.17 onto the Sketch Panel canvas.
+
+===== PDF PAGE 105 =====
+6.3 Sketch Panel 91
+Figure 6.17: Desired result of the algorithm.
+Figure 6.17 is not a product of the algorithm, but an estimation of the desired
+result of the algorithm.
+Implementation
+To implement the algorithm, we will start by presenting the pseudo code for the
+algorithm, this will be done in Code Snippet 6.11.
+1 /* Neighbouring droplet syntax : n_ " position of neighbour " */
+2
+3 foreach dropletGroup
+4 initialize vertices list
+5 choose starting droplet
+6 choose starting point
+7 find all neighbouring droplets for the given point
+8
+9 /* Check for valid traversal points */
+10 if n_top_right is null and n_bottom_right is not null
+11 /* Point to the right is valid */
+12 if current point is convex or concave
+13 push corner point to vertices list
+14
+15 if current point is not contained in vertices list
+16 push current point to vertices list
+17
+18 /* The content of the following else if statements are
+identical to this one , and will be represented by "..." */
+19
+
+===== PDF PAGE 106 =====
+92 Graphical User Interface
+20 else if n_bottom_right is null and n_bottom_left is not null
+21 /* Point to downwards is valid */
+22 ...
+23
+24 else if n_bottom_left is null and n_top_left is not null
+25 /* Point to the left is valid */
+26 ...
+27
+28 else if n_top_left is null and n_top_right is not null
+29 /* Point to upwards is valid */
+30 ...
+31
+32
+33 draw shape from vertices list
+Code Snippet 6.11: Pseudo code of the algorithm responsible for traversing
+the droplet groups and gathering circumference points.
+Running the algorithm from Code Snippet 6.11, it will result in the output seen
+in Figure 6.18.
+Figure 6.18: Result of the algorithm in Code Snippet 6.11. Showing both the
+enclosing shape without the individual droplets, and with the
+individual droplets.
+This output is a step in the correct direction, and we are now able to generate
+the enclosing shape, however, as described in the design section, this is not the
+desired end result. Droplets have rounded edges, however, this algorithm pro-
+duces shapes with sharp edges. To get the desired output, we have to round the
+edges of the shape produced by the algorithm.
+To round the corners, we utilize an existing algorithm introduced in reference
+[15]. The algorithm takes a list of vertices and a radius as input and produces
+
+===== PDF PAGE 107 =====
+6.3 Sketch Panel 93
+a shape based on the list of vertices, with corners rounded by the radius. The
+algorithm uses bezier curves to approximate arches, the arches will be calcu-
+lated between two points, with a curvature corresponding to the radius. By
+introducing this rounding algorithm into our algorithm, we get the output seen
+in Figure 6.19.
+Figure 6.19: Result of the algorithm in code snippet 6.11, with rounded
+corners. Showing both the final shape without the individual
+droplets, and with the individual droplets.
+With the combination of the two algorithms, we are now able to draw complex
+droplet group shapes. However, a limitation of this method is that it does not
+support hollow shapes, meaning shapes with holes.
+In Figure 6.20 a comparison between the actual DMF platform and the shape
+generated by the Sketch Panel manager is presented, and compared by overlay-
+ing one over the other. From the comparison, we can see that the simulation
+produces a shape that is very similar to the one observed in the actual DMF
+platform.
+
+===== PDF PAGE 108 =====
+94 Graphical User Interface
+Figure 6.20: Actual DMF platform L-shaped droplet, simulated L-shaped
+droplet, and an overlay of the two.
+6.3.6 Procedural Animations
+At this point, we have introduced droplet groups as static shapes, allowing for
+realistic looking droplets. This section will present the design and implemen-
+tation of procedural animations, allowing for realistic and dynamic movement,
+merging and splitting of droplet groups, as seen in the physical DMF platform.
+Before beginning this section, we will shortly define the term procedural an-
+imation. Procedural animation is a computer animation, where the animation
+is automatically generated in real-time.
+We chose to create procedural animations instead of classic animations since
+classic animations require predefined animations for every possible configura-
+tion of the droplets within the droplet group. On the contrary, procedural
+
+===== PDF PAGE 109 =====
+6.3 Sketch Panel 95
+animations only require a set of rules and can be used on every configuration,
+that follows this set of rules. With this information, it should be quite clear
+that procedural animations are favourable since it would require a quite large
+amount of predefined animations to account for every possible animation.
+Design of Procedural Animations
+The procedural animation should provide realistic movement, merging and split-
+ting of droplet groups, as observed on the physical DMF platform.
+A procedural animation model can be designed in many ways, we have cho-
+sen to implement an interpolation model. This model works by interpolating
+between two shapes, one being the initial shape and the other being the final
+shape. In the GUI, the shapes relate to the droplet group vertices lists, which
+we described in the previous sections. We chose the initial shape to be the list
+of droplet group vertices for the current droplet groups and the final shape to
+be the list of vertices calculated for the droplet groups which are sent from the
+Simulation Engine. Since we now have two lists of vertices, we can interpolate
+between the two. However, we first have to figure out which point pairs should
+be interpolated. To accomplish this, we compare the two lists of vertices and
+find the points which are in the initial shape and not in the final shape. For each
+point in the initial shape and not in the final shape, we can find the closest point
+in the final shape and choose this point to be the one we interpolate to. This
+model works for droplet groups that are connected between each simulation step
+since they would have the same groupID. The model would not work for split-
+ting of droplets since when a group splits, one part will keep the groupID, and
+the other part would get a newly generated groupID. Therefore we have to find
+the cases where a group splits into multiple subgroups and let our interpolation
+model run on those cases as well.
+Implementation of Procedural Animations
+Most of the work has already been done in the previous sections, where we de-
+scribed how we draw droplet groups. From those sections, we are left with all
+the information we need to implement the interpolation model for procedural
+animation. Firstly, we need to store both our initial shapes and final shapes,
+our GUI Broker only acts as temporary storage, meaning that the droplet group
+data, including the vertices lists, will be overwritten when we receive new data
+from the Simulation Engine. To save the initial shapes, which are the vertices
+lists from the current droplet groups, we can create a new temporary storage
+
+===== PDF PAGE 110 =====
+96 Graphical User Interface
+within the GUI Broker, which stores the current droplet group data as previ-
+ous droplet groups since the incoming droplet groups will become the current
+groups. This way, we are both storing the initial vertices lists for the droplet
+groups and the final vertices lists.
+We can now compare the vertices from the previous droplet groups and the
+incoming (current) droplet groups and find the vertices, which should be used
+for the interpolation. We do this by finding the difference between the previous
+droplet group and the current droplet group. The next step is to find the points
+that should be interpolated to, meaning that for each point in the comparison
+difference, we need to find a corresponding point in the current droplet group
+vertices list. We do this by finding the point, in the current droplet group
+vertices list, closest to the point in the comparison difference.
+1 /* Previous group ID , prevGroupID , is optional */
+2 function g e t G r o u p V e r t e x P a i r s F o r L e r p ( groupID , prevGroupID ) {
+3 let cur_group = gui_broker . droplet_groups [ groupID ];
+4
+5 if ( typeof prevGroupID == " undefined " ) { prevGroupID = groupID }
+6 let prev_group = gui_broker . p r e v _ d r o p l e t _ g r o u p s [ prevGroupID ];
+7
+8 if ( typeof cur_group == " undefined " ||
+9 typeof prev_group == " undefined " ) { return ; }
+10
+11 let ver tices_to _lerp = g e t G r o u p V e r t i c e s F o r L e r p ( groupID ,
+12 prevGroupID ) ;
+13 let vertex_pairs = []; /* [[[ x1 , x2 ] ,[ y1 , y2 ]] ... ] */
+14
+15 /* Find closest point in current group */
+16 for ( i in ver tices_to _lerp ) {
+17 let min_dist = [9999 , " point " ];
+18 for ( j in cur_group . vertices ) {
+19 let dist = p . dist ( ver tices_to _lerp [ i ][0] ,
+20 verti ces_to_l erp [ i ][1] ,
+21 cur_group . vertices [ j ][0] ,
+22 cur_group . vertices [ j ][1]) ;
+23
+24 if ( dist < min_dist [0]) {
+25 min_dist = [ dist , cur_group . vertices [ j ]];
+26 }
+27 }
+28 vertex_pairs . push ([[ verti ces_to_le rp [ i ][0] , min_dist [1][0]] ,
+29 [ vert ices_to_ lerp [ i ][1] , min_dist [1][1]]]) ;
+30
+31 vert ices_to_l erp . push ([ min_dist [1][0] , min_dist [1][1]]) ;
+32 }
+33 return vertex_pairs ;
+34 }
+Code Snippet 6.12: Function responsible for finding the point pairs, for
+which an interpolation can be carried out on.
+
+===== PDF PAGE 111 =====
+6.3 Sketch Panel 97
+The function in Code Snippet 6.12 returns an array of vertex pairs, with the
+type [[[x1, x2], [y1, y2]], ...] , these point pairs are the ones which will be
+interpolated between. The last step of the interpolation model is to carry out
+the actual interpolation, going from the previous point to the new point, from
+x1 to x2 and y1 to y2. To interpolate, we use the lerp functionality provided by
+the p5js framework, this function allows us to get a percentage value between
+two points. Increasing the percentage amount incrementally, from 0 to 1, will
+allow us to interpolate between the initial point and the final point. We do this
+for every entry in the array of vertex pairs.
+1 /* Previous group ID , prevGroupID , is optional */
+2 function ler pG ro up Ve rti ce s ( groupID , amount , prevGroupID ) {
+3 find the cur_group
+4 find the prev_group
+5
+6 if prev_group is not undefined {
+7 /* Using g e t G r o u p V e r t e x P a i r s F o r L e r p */
+8 find vertex pairs for prev_group
+9 find vertex pairs for cur_group
+10
+11 for each entry in current vertex pairs {
+12 lerp vertex X pairs
+13 lerp vertex Y pairs
+14
+15 for each entry in previous vertex pairs {
+16 if the cur_group vertices should be lerped {
+17 update the corresponding vertex of the group
+18 }
+19 }
+20 }
+21 }
+22
+23 draw the droplet group
+24 }
+Code Snippet 6.13: Pseudo code of lerpGroupVertices function, responsible
+for lerping vertices.
+In Code Snippet 6.13 we can see the function responsible for handling the lerping
+(interpolating) between the shapes. The function works by taking the vertex
+pairs, calculated in Code Snippet 6.12, and lerping from the initial point to the
+corresponding point in the current droplet group. It does this by a given amount,
+related to a percentage from 0 to 1, and finds the corresponding value between
+the vertex pairs. We now have an interpolation model that works for droplFigure 6.16 shows the method we use for traversing the droplet group circumference here s0 is our chosen starter point. From s0 we create a type of coordinate
+system, where for each quadrant, we check to see if the quadrant is empty,
+meaning containing no droplet, which is neighbour of the current droplet (bottom right), and then check if any of the non-diagonal fields contains a droplet.
+For s0, the case where the top right is empty and the bottom right is not empty
+is true, meaning the next valid point is to the right. We check for the cases in
+the direction of the arrow depicted in the figure, which allows us to traverse the
+droplet group in the same direction, resulting in an ordered list of points.
+With information about the neighbours, we can find the next point on the
+circumference and add the precise point to a list of the final vertices. By choosing
+the next point in a clockwise manner, we can assure that the direction is held,
+as seen in Figure 6.15. We now have a set of vertices for which we can draw
+a shape that encloses the entire group of droplets. The last step needed for
+creating a droplet-like structure of the droplet groups is to round the corners of
+the shape. After these steps, the algorithm should, in theory, be able to draw
+what is seen in Figure 6.17 onto the Sketch Panel canvas.
+6.3 Sketch Panel 91
+Figure 6.17: Desired result of the algorithm.
+Figure 6.17 is not a product of the algorithm, but an estimation of the desired
+result of the algorithm.
+Implementation
+To implement the algorithm, we will start by presenting the pseudo code for the
+algorithm, this will be done in Code Snippet 6.11.
+1 /* Neighbouring droplet syntax : n_" position of neighbour " */
+2
+3 foreach dropletGroup
+4 initialize vertices list
+5 choose starting droplet
+6 choose starting point
+7 find all neighbouring droplets for the given point
+8
+9 /* Check for valid traversal points */
+10 if n_top_right is null and n_bottom_right is not null
+11 /* Point to the right is valid */
+12 if current point is convex or concave
+13 push corner point to vertices list
+14
+15 if current point is not contained in vertices list
+16 push current point to vertices list
+17
+18 /* The content of the following else if statements are
+identical to this one , and will be represented by "..." */
+19
+92 Graphical User Interface
+20 else if n_bottom_right is null and n_bottom_left is not null
+21 /* Point to downwards is valid */
+22 ...
+23
+24 else if n_bottom_left is null and n_top_left is not null
+25 /* Point to the left is valid */
+26 ...
+27
+28 else if n_top_left is null and n_top_right is not null
+29 /* Point to upwards is valid */
+30 ...
+31
+32
+33 draw shape from vertices list
+Code Snippet 6.11: Pseudo code of the algorithm responsible for traversing
+the droplet groups and gathering circumference points.
+Running the algorithm from Code Snippet 6.11, it will result in the output seen
+in Figure 6.18.
+Figure 6.18: Result of the algorithm in Code Snippet 6.11. Showing both the
+enclosing shape without the individual droplets, and with the
+individual droplets.
+This output is a step in the correct direction, and we are now able to generate
+the enclosing shape, however, as described in the design section, this is not the
+desired end result. Droplets have rounded edges, however, this algorithm produces shapes with sharp edges. To get the desired output, we have to round the
+edges of the shape produced by the algorithm.
+To round the corners, we utilize an existing algorithm introduced in reference
+[15]. The algorithm takes a list of vertices and a radius as input and produces
+6.3 Sketch Panel 93
+a shape based on the list of vertices, with corners rounded by the radius. The
+algorithm uses bezier curves to approximate arches, the arches will be calculated between two points, with a curvature corresponding to the radius. By
+introducing this rounding algorithm into our algorithm, we get the output seen
+in Figure 6.19.
+Figure 6.19: Result of the algorithm in code snippet 6.11, with rounded
+corners. Showing both the final shape without the individual
+droplets, and with the individual droplets.
+With the combination of the two algorithms, we are now able to draw complex
+droplet group shapes. However, a limitation of this method is that it does not
+support hollow shapes, meaning shapes with holes.
+In Figure 6.20 a comparison between the actual DMF platform and the shape
+generated by the Sketch Panel manager is presented, and compared by overlaying one over the other. From the comparison, we can see that the simulation
+produces a shape that is very similar to the one observed in the actual DMF
+platform.
+94 Graphical User Interface
+Figure 6.20: Actual DMF platform L-shaped droplet, simulated L-shaped
+droplet, and an overlay of the two.
+6.3.6 Procedural Animations
+At this point, we have introduced droplet groups as static shapes, allowing for
+realistic looking droplets. This section will present the design and implementation of procedural animations, allowing for realistic and dynamic movement,
+merging and splitting of droplet groups, as seen in the physical DMF platform.
+Before beginning this section, we will shortly define the term procedural animation. Procedural animation is a computer animation, where the animation
+is automatically generated in real-time.
+We chose to create procedural animations instead of classic animations since
+classic animations require predefined animations for every possible configuration of the droplets within the droplet group. On the contrary, procedural
+6.3 Sketch Panel 95
+animations only require a set of rules and can be used on every configuration,
+that follows this set of rules. With this information, it should be quite clear
+that procedural animations are favourable since it would require a quite large
+amount of predefined animations to account for every possible animation.
+Design of Procedural Animations
+Thet
+groups containing the same groupID, however, as described in the related design
+section, we also want to be able to animate splitting, where a new group will be
+created as a result, and thereby have a different groupID.
+
+===== PDF PAGE 112 =====
+98 Graphical User Interface
+By finding the new droplet groups and comparing the individual droplets to the
+previous droplet groups, we can find correlations between individual droplets
+since at least one droplet in the new droplet group would be present in the old
+droplet group. The function used to find the new groups that have been split
+from a present group can be seen in Code Snippet 6.14.
+1 function findGroupSplit ( groupID ) {
+2 let cur_group = gui_broker . droplet_groups [ groupID ];
+3 let prev_group = gui_broker . p r e v _ d r o p l e t _ g r o u p s [ groupID ];
+4 if ( typeof cur_group == " undefined " || typeof prev_group == "
+undefined " ) { return ; }
+5
+6 if (!( Object . keys ( gui_broker . p r e v _ d r o p l e t _ g r o u p s ) . length < Object .
+keys ( gui_broker . droplet_groups ) . length ) ) { return ; }
+7
+8 let p o s s i b l e _ s p l i t _ d r o p l e t s = [];
+9 for ( i in prev_group ) {
+10 for ( j in cur_group ) {
+11
+12 if ( prev_group [ i ]. ID != cur_group [ j ]. ID ) {
+13 p o s s i b l e _ s p l i t _ d r o p l e t s . push ( prev_group [ i ]. ID ) ;
+14 }
+15 }
+16 }
+17
+18 let new_groups = [];
+19 for ( i in p o s s i b l e _ s p l i t _ d r o p l e t s ) {
+20 for ( j in gui_broker . droplets ) {
+21 if ( p o s s i b l e _ s p l i t _ d r o p l e t s [ i ] == gui_broker . droplets [ j ]. ID
+&& gui_broker . droplets [ j ]. group != groupID ) {
+22 if (! new_groups . includes ( gui_broker . droplets [ j ]. group ) )
+{ new_groups . push ( gui_broker . droplets [ j ]. group ) ; }
+23 }
+24 }
+25 }
+26
+27 return new_groups ;
+28 }
+Code Snippet 6.14: Function responsible for finding splitting of groups.
+As a result of our interpolation model, we are able to apply a procedural an-
+imation to the droplet groups, while moving, merging and splitting. A static
+representation of an animation can be seen in Figure 6.21, and a video of the
+animations can be found in the footnotes of this page 1.
+1Procedural Animation Video: https://youtu.be/g6BJ95sQk08
+
+===== PDF PAGE 113 =====
+6.3 Sketch Panel 99
+Figure 6.21: Static representation of the procedural animation of a droplet
+movement. 1) Initial position of the droplet. 2) Droplet in be-
+tween the initial and elongated position. 3) Droplet in it’s elon-
+gated position. 4) Droplet in between it’s elongated and final
+position. 5) Droplet in it’s final position.
+View Summary
+During this section, we presented how the Sketch Panel is drawn by the Sketch
+Panel Manager. This allowed for the visual representation of the simulation
+engine data on the GUI. In Figure 6.22 the GUI can be seen, where each design
+component that has been implemented is replaced by the actual GUI component.
+
+===== PDF PAGE 114 =====
+100 Graphical User Interface
+Figure 6.22: GUI design, with implemented Sketch Panel.
+6.4 Control Panel
+This section describes the design and implementation of the Control Panel and
+Control Panel manager, as seen in Figure 6.3.
+
+===== PDF PAGE 115 =====
+6.4 Control Panel 101
+Design
+The Control Panels’ overall design and placement in relation to the rest of
+the GUI can be seen in Figure 6.2, in Figure 6.3 the general placement and
+connection between the Control Panel Manager and Control Panel can be seen.
+The Control Panel provides the user with necessary control over the simulation
+through the logic of the Control Panel manager; this includes stepping through
+the simulation, playing the simulation, going to a specific time in the simulation,
+restarting the simulation, and downloading data related to the simulation. The
+controls are connected to buttons, which are located on the Razor page called
+SimulatorPage; some on click callback functions are located within this page,
+providing direct calls to the simulation engine since a reference is present within
+the page. The functionalities located directly in the SimulaterPage are next
+step, play of the simulation, restart, and numeric input. There is no reason for
+these control functionalities to be handled in the Control Panel manager since
+this would require it to be held in JavaScript, making the calls more advanced
+for no reason and no improvement. The controls allow the user to navigate the
+simulation, moving back or forward to a specific point in time, or just running
+the simulation. For some components, specifically the numeric input and slider,
+we use custom components provided by Radzen[16].
+Implementation
+The Control Panel is structured by HTML, which is located within the Simu-
+latorPage. A simplified HTML structure of the Control Panel can be seen in
+Code Snippet 6.15.
+1 < div id = " controlPanel " >
+2
+3 < div id = " button_div " >
+4
+5 <div >
+6 < button > Next Step </ button >
+7 < button > @PlayButtonText </ button >
+8 < button > Restart </ button >
+9 < button > Download </ button >
+10 </ div >
+11
+12 <div >
+13 < span > TimeStep amount : </ span >
+14 < RadzenNumeric > </ RadzenNumeric >
+15 </ div >
+16
+17 </ div >
+
+===== PDF PAGE 116 =====
+102 Graphical User Interface
+18
+19 < div id = " slider_div " >
+20 < RadzenSlider > </ RadzenSlider >
+21 < button > Goto Time : @sliderValue </ button >
+22 </ div >
+23 </ div >
+Code Snippet 6.15: Simplified HTML of the Control Panel, function calls,
+classes, etc. is stripped from the snippet.
+In Code Snippet 6.15, we can see that the Control Panel contains five buttons,
+a numeric input, and a slider. Together these interaction components provide
+the user with control over the simulation. For the numeric input and slider, we
+use the Radzen components, RadzenNumeric and RadzenSlider. These provide
+the exact functionalities needed. The RadzenNumeric component lets the user
+input a specified numeric value, in our case, a decimal value. The RadzenSlider
+provides a slider, which the user can manipulate by dragging. The slider has
+a minimum and maximum value, set to 0 and 100. The numeric input is used
+to determine the step time amount, in seconds, taken by the simulation engine
+when the next step button is clicked, where a time step amount of -1 indicates
+a step to the next action in the simulation engine action queue. The slider
+provides the user with a way of accessing a specific time point in the simulation.
+By dragging the slider to the exact point, the user is able to go to that exact
+time in the simulation. This can either be before or after the current simulation
+time.
+6.4.1 Control Panel Manager
+This section presents the Control Panel manager and its core functionality of
+allowing for the download of simulation data.
+Design
+The core functionality of the Control Panel manager is to provide the download
+functionality to the user. The download functionality allows the user to gather
+data about the simulator every given time step until a set time in the simulation
+is reached. This means that the user should be able to input the time step for
+which they would like to gather the data and an end time for which the data is
+gathered. To create a more advanced download menu for the user, a modal will
+be used, which essentially is a type of pop-up menu, that takes over the main
+focus of the website while active. The downloaded data will be in the file format
+
+===== PDF PAGE 117 =====
+6.4 Control Panel 103
+JSON and be a direct representation of the simulation engine’s container data,
+which contains all information about the simulation. Code Snippet 6.16 displays
+the functions of the Control Panel manager related to downloading data.
+1 /* Types */
+2 /* The container relates to the simulation engine container data */
+3 type d at a_ fo r_d ow nl oa d = container list
+4
+5 /* Functions */
+6 function s t o r e _ d o w n l o a d _ d a t a ( JSON ) -> ()
+7 function download_data : () -> ()
+Code Snippet 6.16: Displays the download functionalities of the Control
+Panel manager, in a descriptive pseudo code.
+We will present a short description of the functions in Code Snippet 6.16.
+• store download data(JSON)
+Stores the data that should be downloaded into data for download, where
+it is stored until all data is gathered, and the download data function is
+triggered.
+• download data()
+Downloads the data stored in data for download as a JSON file, providing
+all necessary data to the user.
+With these functions, the Control Panel manager is able to provide a download-
+able JSON file containing all data available. The user can then manipulate this
+data and create data representations from it.
+6.4.2 Downloading Data
+By the structure of the Control Panel HTML, a download button is present. By
+binding an on click function to this button, we can trigger a specific function
+when the button is pressed by the user. The on click function then triggers a
+modal to open, the modal is a pop-up menu containing input of two numerical
+values, one being the time step length that should be between each data point in
+the downloaded data, and the other being the end point time of the downloaded
+data, the modal can be seen in Figure 6.23.
+
+===== PDF PAGE 118 =====
+104 Graphical User Interface
+Figure 6.23: Download modal, displayed on top of all other GUI components,
+requiring an action to be taken before closing.
+When the modal has been opened, two actions can be carried out, either the
+user can cancel the download by clicking the X in the top right corner or submit
+the download request by clicking submit. Submitting the request will trigger
+another function which will run the simulation engine, and at each time step
+inputted by the user, it will send the data through the GUI broker to the Control
+Panel manager, where it will be stored. When the simulation has reached the
+endpoint, inputted by the user, it will flag that it is done, and thedownload data
+function in the Control Panel manager will be triggered. The download data
+function attaches the data to a hidden HTML element, forcing a click on the
+element, thereby triggering a download of the data JSON file, and finishes by
+clearing the stored data. The download data function can be seen in Code
+Snippet 6.17.
+1 download_data () {
+2 let jsonData = JSON . stringify ( this . da ta_ fo r_ do wn loa d ) ;
+3
+4 /* Download the data by forcing a click on an anchor element . */
+5 var dataStr = " data : text / json ; charset = utf -8 , " + e n co d eU R I Co m p on e n t (
+jsonData ) ;
+6 var dlAnchorElem = document . getElementById ( ’ d o wn l o ad A nc h o rE l e m ’) ;
+7 dlAnchorElem . setAttribute ( " href " , dataStr ) ;
+8 dlAnchorElem . setAttribute ( " download " , " data . json " ) ;
+9 dlAnchorElem . click () ;
+10
+11 this . d at a_ fo r_ dow nl oa d = [];
+12 }
+Code Snippet 6.17: Displays the download functionalities of the Control
+Panel manager, in a descriptive pseudo code.
+
+===== PDF PAGE 119 =====
+6.4 Control Panel 105
+6.4.3 Example use of Data
+By downloading the data, using the download feature, a program like Excel can
+be utilized to read the JSON file, and thereafter functionalities within excel can
+be used to manipulate the data, draw diagrams, etc. In Figure 6.24 an example
+of temperature over time for each droplet group can be seen.
+Figure 6.24: Temperature over time for each droplet group in the simulation.
+From Figure 6.24 we can deduct that at time 50 seconds, group 5 has a temper-
+ature above 50◦C, group 4 has a temperature above 40 ◦C, and the rest of the
+groups has a temperature below 30 ◦C. This is a very simple example, but it
+gives insight into the actual temperatures during the simulation. For example, a
+protocol you write could have a group getting warmer than what was intended.
+Using this data, any such error can be found, and the protocol can then be
+rewritten.
+View Summary
+In this section, we described how the Control Panel and Control Panel manager
+has been designed and implemented. In Figure 6.29 the GUI can be seen, where
+each component that has been populated at this point is shown.
+
+===== PDF PAGE 120 =====
+106 Graphical User Interface
+Figure 6.25: GUI design with implemented Sketch Panel and Control Panel.
+6.5 Information Panel
+This section describes the design and implementation of the Information Panel
+and Information Panel Manager, as seen in Figure 6.3.

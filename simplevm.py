@@ -2,6 +2,7 @@ from datatypes import Container
 from engine import execute_action
 from collections import deque
 
+
 class SimpleVM:
     def __init__(self, container: Container):
         self.container = container
@@ -47,3 +48,35 @@ class SimpleVM:
 
     def has_actions(self):
         return len(self.action_queue) > 0
+
+    def enqueue_action(self, action: dict):
+        """Allow external software to inject actions at runtime."""
+        self.action_queue.append(action)
+
+    def read_sensor(self, sensor_id: int):
+        """Read sensor values dynamically during execution."""
+        sensor = next((s for s in self.container.sensors if getattr(s, "sensor_id", None) == sensor_id), None)
+        if sensor is None:
+            return None
+
+        sensor_type = getattr(sensor, "type", "")
+        if sensor_type == "temperature":
+            return {"type": sensor_type, "value": getattr(sensor, "temperature", -1.0)}
+        if sensor_type == "color":
+            return {
+                "type": sensor_type,
+                "value": [
+                    getattr(sensor, "value_r", -1),
+                    getattr(sensor, "value_g", -1),
+                    getattr(sensor, "value_b", -1),
+                ],
+            }
+        return {"type": sensor_type, "value": None}
+
+    def set_heater_target(self, actuator_id: int, desired_temp: float) -> bool:
+        """Control actuator parameters during runtime."""
+        heater = next((a for a in self.container.actuators if getattr(a, "actuator_id", None) == actuator_id), None)
+        if heater is None:
+            return False
+        heater.desired_temp = desired_temp
+        return True

@@ -1,0 +1,26 @@
+{
+  "information": {
+    "platform_name": "Split Merge Bench",
+    "platform_type": "testing",
+    "platform_ID": 1002,
+    "sizeX": 140,
+    "sizeY": 100
+  },
+  "electrodes": [
+    {"name": "a1", "ID": 1, "electrodeID": 201, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "a2", "ID": 2, "electrodeID": 202, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "a3", "ID": 3, "electrodeID": 203, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "a4", "ID": 4, "electrodeID": 204, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "a5", "ID": 5, "electrodeID": 205, "driverID": 0, "shape": 0, "positionX": 100, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+
+    {"name": "b1", "ID": 6, "electrodeID": 206, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "b2", "ID": 7, "electrodeID": 207, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "c1", "ID": 8, "electrodeID": 208, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "c2", "ID": 9, "electrodeID": 209, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []}
+  ],
+  "droplets": [
+    {"id": 1, "name": "d_main", "positionX": 50, "positionY": 50, "sizeX": 16, "sizeY": 16, "color": "#33cc66", "temperature": 24.0, "electrodeID": 202}
+  ],
+  "actuators": [],
+  "sensors": []
+}

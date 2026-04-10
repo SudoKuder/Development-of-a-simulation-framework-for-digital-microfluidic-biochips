@@ -1,0 +1,12 @@
+setel 0 401
+setel 1 401
+setel 0 402
+clrel 0 401
+setel 1 402
+clrel 1 401
+setel 0 403
+clrel 0 402
+setel 1 403
+clrel 1 402
+clrel 0 403
+clrel 1 403

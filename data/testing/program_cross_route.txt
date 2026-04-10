@@ -1,0 +1,17 @@
+setel 0 101
+setel 0 102
+clrel 0 101
+setel 0 103
+clrel 0 102
+setel 0 106
+clrel 0 103
+setel 0 109
+clrel 0 106
+setel 0 108
+clrel 0 109
+setel 0 107
+clrel 0 108
+setel 0 104
+clrel 0 107
+setel 0 101
+clrel 0 104
