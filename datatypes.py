@@ -4,6 +4,7 @@ from typing import List, Optional
 @dataclass
 class Electrode:
     id: int
+    electrode_id: int
     driver_id: int
     x: int
     y: int
@@ -28,9 +29,11 @@ class Droplet:
     volume: float = 1.0
     group_id: int = -1
     electrode_id: int = -1
-    model_order: list = field(default_factory=lambda: 
-        ["split", "merge", "split", "color", "temperature", "makeBubble"])
+    model_order: list = field(default_factory=lambda:
+        ["split", "merge"])
     next_model: int = 0
+    last_bubble_time: float = -1e9
+    bubble_cooldown: float = 1.0
 
 @dataclass
 class Bubble:
@@ -40,6 +43,8 @@ class Bubble:
     size_x: float
     size_y: float
     to_remove: bool = False
+    age: float = 0.0
+    lifetime: float = 3.0
     subscriptions: list = field(default_factory=list)
 
 @dataclass

@@ -16,20 +16,24 @@ class SimpleVM:
                     parts = line.split()
                     driver_id = int(parts[1])
                     for el_id in parts[2:]:
+                        electrode_id = int(el_id)
                         self.action_queue.append({
                             "action": "setel",
                             "driver": driver_id,
-                            "id": int(el_id),
+                            "electrode_id": electrode_id,
+                            "id": electrode_id,
                             "change": 1
                         })
                 elif line.startswith("clrel"):
                     parts = line.split()
                     driver_id = int(parts[1])
                     for el_id in parts[2:]:
+                        electrode_id = int(el_id)
                         self.action_queue.append({
                             "action": "clrel",
                             "driver": driver_id,
-                            "id": int(el_id),
+                            "electrode_id": electrode_id,
+                            "id": electrode_id,
                             "change": 0
                         })
 

@@ -3,7 +3,7 @@ from datatypes import Container, Droplet, Electrode
 from engine import step
 
 SCALE = 2          # Pixels per simulation unit
-FPS = 30
+FPS = 2
 BG_COLOR    = (30, 30, 30)
 ELEC_OFF    = (200, 200, 200)
 ELEC_ON     = (220, 60,  60)

@@ -21,6 +21,7 @@ def load_platform(filepath: str) -> Container:
     for e in data.get("electrodes", []):
         container.electrodes.append(Electrode(
             id=_get(e, "id", "ID"),
+            electrode_id=_get(e, "electrodeID", "id", "ID", default=-1),
             driver_id=_get(e, "driverID", default=0),
             x=_get(e, "positionX", default=0),
             y=_get(e, "positionY", default=0),
