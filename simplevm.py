@@ -79,4 +79,5 @@ class SimpleVM:
         if heater is None:
             return False
         heater.desired_temp = desired_temp
+        heater.has_target_setpoint = True
         return True

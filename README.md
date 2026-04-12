@@ -55,6 +55,12 @@ Add a component to `actuators` with an explicit `type`:
 
 ### 7.3 Add new models
 
+- Droplet execution is breadth-first through a subscriber queue: each queue turn executes one model for that droplet.
+- Each droplet owns its own `model_order` and `next_model` pointer.
+- Action-triggered cycles execute indices before `begin_of_time_sensitive_models`.
+- Time-triggered cycles execute indices from `begin_of_time_sensitive_models` onward.
+- `begin_of_time_sensitive_models` is configurable per droplet via JSON (`beginOfTimeSensitiveModels` / `begin_of_time_sensitive_models`).
+
 #### 7.3.1 Component-specific models
 
 - Add actuator dynamics in `models.py` (example: `micro_shaker_frequency_change`).

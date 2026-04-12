@@ -1,0 +1,59 @@
+{
+  "information": {
+    "platform_name": "Dual Bench Visual Test",
+    "platform_type": "testing",
+    "platform_ID": 1010,
+    "sizeX": 260,
+    "sizeY": 100
+  },
+  "electrodes": [
+    {"name": "l_1_1", "ID": 1, "electrodeID": 401, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "l_1_2", "ID": 2, "electrodeID": 402, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "l_1_3", "ID": 3, "electrodeID": 403, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "l_1_4", "ID": 4, "electrodeID": 404, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "l_1_5", "ID": 5, "electrodeID": 405, "driverID": 0, "shape": 0, "positionX": 100, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+
+    {"name": "l_2_1", "ID": 6, "electrodeID": 406, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "l_2_2", "ID": 7, "electrodeID": 407, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 1, "corners": []},
+    {"name": "l_2_3", "ID": 8, "electrodeID": 408, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "l_2_4", "ID": 9, "electrodeID": 409, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 1, "corners": []},
+    {"name": "l_2_5", "ID": 10, "electrodeID": 410, "driverID": 0, "shape": 0, "positionX": 100, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+
+    {"name": "l_3_1", "ID": 11, "electrodeID": 411, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "l_3_2", "ID": 12, "electrodeID": 412, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "l_3_3", "ID": 13, "electrodeID": 413, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "l_3_4", "ID": 14, "electrodeID": 414, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "l_3_5", "ID": 15, "electrodeID": 415, "driverID": 0, "shape": 0, "positionX": 100, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []}
+
+   ],
+  "droplets": [
+    {
+      "id": 1,
+      "name": "left_big",
+      "positionX": 50,
+      "positionY": 50,
+      "sizeX": 32,
+      "sizeY": 32,
+      "color": "#1f77ff",
+      "temperature": 24.0,
+      "volume": 90.0,
+      "electrodeID": 407,
+      "modelOrder": ["split", "merge", "temperature"]
+    },
+    {
+      "id": 2,
+      "name": "left_small",
+      "positionX": 90,
+      "positionY": 50,
+      "sizeX": 20,
+      "sizeY": 20,
+      "color": "#00dd66",
+      "temperature": 24.0,
+      "volume": 40.0,
+      "electrodeID": 409,
+      "modelOrder": ["merge", "temperature"]
+    }
+  ],
+  "actuators": [],
+  "sensors": []
+}

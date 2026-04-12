@@ -10,16 +10,19 @@ from engine import step
 
 SCALE = 2
 FPS = 30
+SKETCH_HEADER_H = 36
 
 BG_COLOR = (24, 24, 24)
 ELEC_OFF = (230, 230, 230)
 ELEC_ON = (220, 60, 60)
-ELEC_BORDER = (70, 70, 70)
+ELEC_BORDER = (0, 0, 0)
 BUBBLE_COLOR = (170, 190, 255)
 PANEL_BG = (38, 38, 38)
 PANEL_BORDER = (82, 82, 82)
 TEXT_COLOR = (225, 225, 225)
 MUTED_TEXT = (165, 165, 165)
+SKETCH_HEADER_BG = (236, 236, 236)
+SKETCH_HEADER_TEXT = (20, 20, 20)
 
 
 def hex_to_rgb(hex_color: str):
@@ -274,7 +277,7 @@ class SimulationGUI:
         self.board_w_px = container.board_width * SCALE
         self.board_h_px = container.board_height * SCALE
         self.side_w = 420
-        self.screen = pygame.display.set_mode((self.board_w_px + self.side_w, max(self.board_h_px, 720)))
+        self.screen = pygame.display.set_mode((self.board_w_px + self.side_w, max(self.board_h_px + SKETCH_HEADER_H, 720)))
         pygame.display.set_caption(f"DMFb Simulator - {container.platform_name}")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("monospace", 12)
@@ -413,8 +416,9 @@ class SimulationGUI:
 
     def draw(self):
         self.screen.fill(BG_COLOR)
+        self._draw_sketch_header()
         if self.electrode_surface:
-            self.screen.blit(self.electrode_surface, (0, 0))
+            self.screen.blit(self.electrode_surface, (0, SKETCH_HEADER_H))
 
         self._draw_sketch_panel()
         self._draw_info_panel()
@@ -429,11 +433,21 @@ class SimulationGUI:
         pygame.display.flip()
         self.group_animation_t = clamp(self.group_animation_t + 0.08, 0.0, 1.0)
 
+    def _draw_sketch_header(self):
+        header_rect = pygame.Rect(0, 0, self.board_w_px, SKETCH_HEADER_H)
+        pygame.draw.rect(self.screen, SKETCH_HEADER_BG, header_rect)
+        pygame.draw.rect(self.screen, ELEC_BORDER, header_rect, 1)
+
+        board_label = self.big_font.render(self.container.platform_name, True, SKETCH_HEADER_TEXT)
+        time_label = self.font.render(f"Simulation Time: {self.container.current_time:.2f}s", True, SKETCH_HEADER_TEXT)
+        self.screen.blit(board_label, (8, 9))
+        self.screen.blit(time_label, (self.board_w_px - time_label.get_width() - 8, 12))
+
     def _draw_sketch_panel(self):
         if self.broker.is_enabled("active_electrodes"):
             for e in self.broker.board["electrodes"]:
                 if e.status == 1:
-                    rect = (e.x * SCALE, e.y * SCALE, e.size_x * SCALE, e.size_y * SCALE)
+                    rect = (e.x * SCALE, SKETCH_HEADER_H + e.y * SCALE, e.size_x * SCALE, e.size_y * SCALE)
                     pygame.draw.rect(self.screen, ELEC_ON, rect)
                     pygame.draw.rect(self.screen, ELEC_BORDER, rect, 1)
 
@@ -446,9 +460,9 @@ class SimulationGUI:
                     overlay.fill((80, 190, 230, 90))
                 else:
                     overlay.fill((220, 70, 70, 85))
-                self.screen.blit(overlay, (getattr(a, "x", 0) * SCALE, getattr(a, "y", 0) * SCALE))
+                self.screen.blit(overlay, (getattr(a, "x", 0) * SCALE, SKETCH_HEADER_H + getattr(a, "y", 0) * SCALE))
                 border_color = (80, 190, 230) if getattr(a, "type", "") in ("micro_shaker", "microShaker") else (220, 70, 70)
-                rect = (getattr(a, "x", 0) * SCALE, getattr(a, "y", 0) * SCALE, sx, sy)
+                rect = (getattr(a, "x", 0) * SCALE, SKETCH_HEADER_H + getattr(a, "y", 0) * SCALE, sx, sy)
                 pygame.draw.rect(self.screen, border_color, rect, 2)
 
                 if getattr(a, "type", "") in ("micro_shaker", "microShaker"):
@@ -460,11 +474,11 @@ class SimulationGUI:
                 sy = getattr(s, "size_y", 0) * SCALE
                 overlay = pygame.Surface((sx, sy), pygame.SRCALPHA)
                 overlay.fill((80, 120, 220, 85))
-                self.screen.blit(overlay, (getattr(s, "x", 0) * SCALE, getattr(s, "y", 0) * SCALE))
+                self.screen.blit(overlay, (getattr(s, "x", 0) * SCALE, SKETCH_HEADER_H + getattr(s, "y", 0) * SCALE))
                 pygame.draw.rect(
                     self.screen,
                     (80, 120, 220),
-                    (getattr(s, "x", 0) * SCALE, getattr(s, "y", 0) * SCALE, sx, sy),
+                    (getattr(s, "x", 0) * SCALE, SKETCH_HEADER_H + getattr(s, "y", 0) * SCALE, sx, sy),
                     2,
                 )
 
@@ -476,12 +490,15 @@ class SimulationGUI:
 
                 contour = self.lerp_group_vertices(key, self.group_animation_t)
                 if len(contour) < 3:
+                    self._draw_group_droplet_fallback(group)
                     continue
                 rounded = self._round_contour(contour, radius=2.8)
-                pts = [(int(x * SCALE), int(y * SCALE)) for x, y in rounded]
-                if len(pts) >= 3:
+                pts = [(int(x * SCALE), int(SKETCH_HEADER_H + y * SCALE)) for x, y in rounded]
+                if len(pts) >= 3 and self._group_contour_is_valid(pts, group.get("droplets", [])):
                     pygame.draw.polygon(self.screen, group["color"], pts)
                     pygame.draw.polygon(self.screen, (0, 0, 0), pts, 2)
+                else:
+                    self._draw_group_droplet_fallback(group)
         else:
             for d in self.broker.board["droplets"]:
                 self._draw_single_droplet(d)
@@ -489,7 +506,7 @@ class SimulationGUI:
         if self.broker.is_enabled("bubbles"):
             for b in self.broker.board["bubbles"]:
                 cx = int(b.x * SCALE)
-                cy = int(b.y * SCALE)
+                cy = int(SKETCH_HEADER_H + b.y * SCALE)
                 radius = max(2, int(min(b.size_x, b.size_y) * SCALE / 2))
                 pygame.draw.circle(self.screen, BUBBLE_COLOR, (cx, cy), radius, 1)
 
@@ -826,8 +843,12 @@ class SimulationGUI:
                     self.edit_buffer = str(self.info_edit_fields.get(field_key, ""))
                     return
 
-        if x <= self.board_w_px and y <= self.board_h_px:
-            candidates = self._hit_candidates(x / SCALE, y / SCALE)
+        if x <= self.board_w_px and y <= SKETCH_HEADER_H + self.board_h_px:
+            if y < SKETCH_HEADER_H:
+                self.selected = None
+                self.selected_type = None
+                return
+            candidates = self._hit_candidates(x / SCALE, (y - SKETCH_HEADER_H) / SCALE)
             if len(candidates) == 1:
                 self.selected_type = candidates[0]["type"]
                 self.selected = candidates[0]["obj"]
@@ -935,6 +956,7 @@ class SimulationGUI:
                     target.color = raw
             elif key == "desired_temp":
                 target.desired_temp = float(raw)
+                target.has_target_setpoint = True
             elif key == "power_status":
                 target.power_status = int(raw)
             elif key == "desired_frequency":
@@ -1029,18 +1051,59 @@ class SimulationGUI:
 
     def _draw_single_droplet(self, droplet: Droplet):
         cx = int(droplet.x * SCALE)
-        cy = int(droplet.y * SCALE)
+        cy = int(SKETCH_HEADER_H + droplet.y * SCALE)
         rx = max(1, int(droplet.size_x * SCALE / 2))
         ry = max(1, int(droplet.size_y * SCALE / 2))
         rect = pygame.Rect(cx - rx, cy - ry, 2 * rx, 2 * ry)
         pygame.draw.ellipse(self.screen, hex_to_rgb(droplet.color), rect)
         pygame.draw.ellipse(self.screen, (0, 0, 0), rect, 2)
 
+    def _draw_group_droplet_fallback(self, group):
+        fill = group.get("color", (255, 255, 255))
+        for droplet in group.get("droplets", []):
+            cx = int(droplet.x * SCALE)
+            cy = int(SKETCH_HEADER_H + droplet.y * SCALE)
+            rx = max(1, int(droplet.size_x * SCALE / 2))
+            ry = max(1, int(droplet.size_y * SCALE / 2))
+            rect = pygame.Rect(cx - rx, cy - ry, 2 * rx, 2 * ry)
+            pygame.draw.ellipse(self.screen, fill, rect)
+            pygame.draw.ellipse(self.screen, (0, 0, 0), rect, 2)
+
+    def _group_contour_is_valid(self, pts, droplets):
+        if len(pts) < 3:
+            return False
+
+        if abs(self._polygon_area_pixels(pts)) < 2.0:
+            return False
+
+        return all(self._point_in_polygon(int(d.x * SCALE), int(SKETCH_HEADER_H + d.y * SCALE), pts) for d in droplets)
+
+    def _polygon_area_pixels(self, points):
+        area = 0.0
+        for i in range(len(points)):
+            x1, y1 = points[i]
+            x2, y2 = points[(i + 1) % len(points)]
+            area += x1 * y2 - x2 * y1
+        return area / 2.0
+
+    def _point_in_polygon(self, px, py, polygon):
+        inside = False
+        n = len(polygon)
+        for i in range(n):
+            x1, y1 = polygon[i]
+            x2, y2 = polygon[(i + 1) % n]
+            if (y1 > py) != (y2 > py):
+                denom = (y2 - y1) if (y2 - y1) != 0 else 1e-9
+                x_at_y = x1 + (py - y1) * (x2 - x1) / denom
+                if x_at_y >= px:
+                    inside = not inside
+        return inside
+
     def _draw_shaker_waves(self, shaker):
         if getattr(shaker, "power_status", 0) != 1:
             return
         cx = int((getattr(shaker, "x", 0) + getattr(shaker, "size_x", 0) / 2) * SCALE)
-        cy = int((getattr(shaker, "y", 0) + getattr(shaker, "size_y", 0) / 2) * SCALE)
+        cy = int(SKETCH_HEADER_H + (getattr(shaker, "y", 0) + getattr(shaker, "size_y", 0) / 2) * SCALE)
         amp = int(min(14, 2 + getattr(shaker, "vibration_frequency", 0.0) / 12.0))
         for ring in range(1, 4):
             pygame.draw.circle(self.screen, (80, 190, 230), (cx, cy), amp * ring, 1)

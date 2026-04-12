@@ -1,0 +1,95 @@
+{
+  "information": {
+    "platform_name": "Bubble Color Temperature Integration Test",
+    "platform_type": "testing",
+    "platform_ID": 1011,
+    "sizeX": 180,
+    "sizeY": 120
+  },
+  "electrodes": [
+    {"name": "e1", "ID": 1, "electrodeID": 501, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 50, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e2", "ID": 2, "electrodeID": 502, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 50, "sizeX": 20, "sizeY": 20, "status": 1, "corners": []},
+    {"name": "e3", "ID": 3, "electrodeID": 503, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 50, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e4", "ID": 4, "electrodeID": 504, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 50, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "e5", "ID": 5, "electrodeID": 505, "driverID": 0, "shape": 0, "positionX": 100, "positionY": 50, "sizeX": 20, "sizeY": 20, "status": 1, "corners": []},
+    {"name": "e6", "ID": 6, "electrodeID": 506, "driverID": 0, "shape": 0, "positionX": 120, "positionY": 50, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+
+    {"name": "u2", "ID": 7, "electrodeID": 507, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 30, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "u3", "ID": 8, "electrodeID": 508, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 30, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "u4", "ID": 9, "electrodeID": 509, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 30, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "u5", "ID": 10, "electrodeID": 510, "driverID": 0, "shape": 0, "positionX": 100, "positionY": 30, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+
+    {"name": "d2", "ID": 11, "electrodeID": 511, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 70, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "d3", "ID": 12, "electrodeID": 512, "driverID": 0, "shape": 0, "positionX": 60, "positionY": 70, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "d4", "ID": 13, "electrodeID": 513, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 70, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "d5", "ID": 14, "electrodeID": 514, "driverID": 0, "shape": 0, "positionX": 100, "positionY": 70, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []}
+  ],
+  "droplets": [
+    {
+      "id": 1,
+      "name": "hot_blue",
+      "positionX": 50,
+      "positionY": 60,
+      "sizeX": 22,
+      "sizeY": 22,
+      "color": "#1f77ff",
+      "temperature": 92.0,
+      "volume": 70.0,
+      "electrodeID": 502,
+      "modelOrder": ["split", "merge", "temperature", "make_bubble"],
+      "beginOfTimeSensitiveModels": 2
+    },
+    {
+      "id": 2,
+      "name": "hot_red",
+      "positionX": 110,
+      "positionY": 60,
+      "sizeX": 22,
+      "sizeY": 22,
+      "color": "#ff5533",
+      "temperature": 92.0,
+      "volume": 70.0,
+      "electrodeID": 505,
+      "modelOrder": ["split", "merge", "temperature", "make_bubble"],
+      "beginOfTimeSensitiveModels": 1
+    }
+  ],
+  "actuators": [
+    {
+      "id": 1,
+      "actuatorID": 1,
+      "type": "heater",
+      "positionX": 40,
+      "positionY": 50,
+      "sizeX": 80,
+      "sizeY": 20,
+      "valueActualTemperature": 95.0,
+      "valueDesiredTemperature": 98.0,
+      "valuePowerStatus": 1
+    }
+  ],
+  "sensors": [
+    {
+      "id": 1,
+      "sensorID": 1,
+      "type": "temperature",
+      "positionX": 60,
+      "positionY": 50,
+      "sizeX": 20,
+      "sizeY": 20,
+      "valueTemperature": 20.0
+    },
+    {
+      "id": 2,
+      "sensorID": 2,
+      "type": "color",
+      "positionX": 80,
+      "positionY": 50,
+      "sizeX": 20,
+      "sizeY": 20,
+      "valueRed": 0,
+      "valueGreen": 0,
+      "valueBlue": 0
+    }
+  ]
+}

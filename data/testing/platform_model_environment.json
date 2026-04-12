@@ -1,0 +1,61 @@
+{
+  "information": {
+    "name": "Model Validation Bench",
+    "sizeX": 120,
+    "sizeY": 80
+  },
+  "electrodes": [
+    {
+      "ID": 1,
+      "electrodeID": 301,
+      "driverID": 0,
+      "shape": 0,
+      "positionX": 10,
+      "positionY": 30,
+      "sizeX": 20,
+      "sizeY": 20,
+      "status": 0,
+      "corners": []
+    },
+    {
+      "ID": 2,
+      "electrodeID": 302,
+      "driverID": 0,
+      "shape": 0,
+      "positionX": 30,
+      "positionY": 30,
+      "sizeX": 20,
+      "sizeY": 20,
+      "status": 0,
+      "corners": []
+    },
+    {
+      "ID": 3,
+      "electrodeID": 303,
+      "driverID": 0,
+      "shape": 0,
+      "positionX": 50,
+      "positionY": 30,
+      "sizeX": 20,
+      "sizeY": 20,
+      "status": 0,
+      "corners": []
+    }
+  ],
+  "droplets": [],
+  "actuators": [
+    {
+      "id": 1,
+      "actuatorID": 1,
+      "type": "heater",
+      "positionX": 30,
+      "positionY": 30,
+      "sizeX": 20,
+      "sizeY": 20,
+      "valueActualTemperature": 95.0,
+      "valueDesiredTemperature": 95.0,
+      "valuePowerStatus": 0
+    }
+  ],
+  "sensors": []
+}

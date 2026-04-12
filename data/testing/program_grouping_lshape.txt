@@ -1,0 +1,2 @@
+# Intentionally empty demo program.
+# This scenario is for inspecting static droplet-group rendering.

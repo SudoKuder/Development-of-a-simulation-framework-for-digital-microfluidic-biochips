@@ -34,6 +34,7 @@ class Droplet:
     electrode_id: int = -1
     model_order: list = field(default_factory=lambda:
         ["split", "merge", "temperature", "make_bubble"])
+    begin_of_time_sensitive_models: int = 2
     next_model: int = 0
     last_bubble_time: float = -1e9
     bubble_cooldown: float = 1.0
@@ -61,7 +62,10 @@ class Heater:
     size_y: int
     actual_temp: float = 20.0
     desired_temp: float = 90.0
-    power_status: int = 0     # -1 = cooling, 0 = hold, 1 = heating
+    # Set to True only after a controller (e.g. VM/UI) explicitly sets desired_temp.
+    has_target_setpoint: bool = False
+    # Signed power direction selected by the heater model: -1 cooling, 0 hold, 1 heating.
+    power_status: int = 0
     type: str = "heater"
 
 

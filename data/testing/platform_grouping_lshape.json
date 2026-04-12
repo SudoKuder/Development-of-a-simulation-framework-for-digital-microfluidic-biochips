@@ -1,0 +1,57 @@
+{
+  "information": {
+    "platform_name": "Grouping L-Shape Demo",
+    "platform_type": "testing",
+    "platform_ID": 1003,
+    "sizeX": 120,
+    "sizeY": 100
+  },
+  "electrodes": [
+    {"name": "a1", "ID": 1, "electrodeID": 301, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "a2", "ID": 2, "electrodeID": 302, "driverID": 0, "shape": 0, "positionX": 40, "positionY": 20, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []},
+    {"name": "b1", "ID": 3, "electrodeID": 303, "driverID": 0, "shape": 0, "positionX": 20, "positionY": 40, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []}
+  ],
+  "droplets": [
+    {
+      "id": 1,
+      "name": "g1",
+      "positionX": 30,
+      "positionY": 30,
+      "sizeX": 20,
+      "sizeY": 20,
+      "color": "#33cc66",
+      "temperature": 22.0,
+      "volume": 30.0,
+      "electrodeID": 301,
+      "modelOrder": ["temperature"]
+    },
+    {
+      "id": 2,
+      "name": "g2",
+      "positionX": 50,
+      "positionY": 30,
+      "sizeX": 20,
+      "sizeY": 20,
+      "color": "#33cc66",
+      "temperature": 25.0,
+      "volume": 30.0,
+      "electrodeID": 302,
+      "modelOrder": ["temperature"]
+    },
+    {
+      "id": 3,
+      "name": "g3",
+      "positionX": 30,
+      "positionY": 50,
+      "sizeX": 20,
+      "sizeY": 20,
+      "color": "#33cc66",
+      "temperature": 28.0,
+      "volume": 30.0,
+      "electrodeID": 303,
+      "modelOrder": ["temperature"]
+    }
+  ],
+  "actuators": [],
+  "sensors": []
+}

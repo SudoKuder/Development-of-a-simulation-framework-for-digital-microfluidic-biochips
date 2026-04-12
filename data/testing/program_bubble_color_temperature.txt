@@ -1,0 +1,11 @@
+setel 0 503 504
+clrel 0 502 505
+setel 0 504
+clrel 0 503
+setel 0 503
+clrel 0 504
+setel 0 503 504
+clrel 0 503
+setel 0 504
+clrel 0 504
+setel 0 503 504

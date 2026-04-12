@@ -19,7 +19,7 @@
     {"name": "c2", "ID": 9, "electrodeID": 209, "driverID": 0, "shape": 0, "positionX": 80, "positionY": 60, "sizeX": 20, "sizeY": 20, "status": 0, "corners": []}
   ],
   "droplets": [
-    {"id": 1, "name": "d_main", "positionX": 50, "positionY": 50, "sizeX": 16, "sizeY": 16, "color": "#33cc66", "temperature": 24.0, "electrodeID": 202}
+    {"id": 1, "name": "d_main", "positionX": 50, "positionY": 50, "sizeX": 22, "sizeY": 22, "color": "#33cc66", "temperature": 24.0, "electrodeID": 202}
   ],
   "actuators": [],
   "sensors": []

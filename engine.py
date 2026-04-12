@@ -193,6 +193,10 @@ def initialize_droplets(container: Container):
         droplet.next_model = 0
         if not droplet.model_order:
             droplet.model_order = ["split", "merge", "temperature", "make_bubble"]
+        droplet.begin_of_time_sensitive_models = max(
+            0,
+            min(int(getattr(droplet, "begin_of_time_sensitive_models", 0)), len(droplet.model_order)),
+        )
         has_shaker = any(getattr(a, "type", "") in ("micro_shaker", "microShaker") for a in container.actuators)
         if has_shaker and "vibration" not in droplet.model_order:
             droplet.model_order.append("vibration")
@@ -239,13 +243,49 @@ def _execute_model(container: Container, droplet: Droplet, model_name: str):
     return model_fn(container, droplet)
 
 
-def _handle_subscriber(container: Container, droplet_id: int):
+def _allowed_model_indices(droplet: Droplet, trigger: str):
+    model_count = len(droplet.model_order)
+    if model_count == 0:
+        return []
+
+    boundary = getattr(droplet, "begin_of_time_sensitive_models", 0)
+    boundary = max(0, min(int(boundary), model_count))
+
+    if trigger == "time":
+        return list(range(boundary, model_count))
+    if trigger == "action":
+        if 0 < boundary < model_count:
+            return list(range(0, boundary))
+        return list(range(model_count))
+    return list(range(model_count))
+
+
+def _next_allowed_model_index(droplet: Droplet, allowed_indices):
+    if not allowed_indices:
+        return None
+
+    model_count = len(droplet.model_order)
+    allowed_set = set(allowed_indices)
+    start_idx = droplet.next_model % model_count
+
+    for offset in range(model_count):
+        idx = (start_idx + offset) % model_count
+        if idx in allowed_set:
+            return idx
+    return None
+
+
+def _handle_subscriber(container: Container, droplet_id: int, trigger: str):
     droplet = next((d for d in container.droplets if d.id == droplet_id), None)
     if droplet is None or not droplet.model_order:
         return [], False
 
+    allowed_indices = _allowed_model_indices(droplet, trigger)
+    model_idx = _next_allowed_model_index(droplet, allowed_indices)
+    if model_idx is None:
+        return [], False
+
     model_count = len(droplet.model_order)
-    model_idx = droplet.next_model % model_count
     model_name = droplet.model_order[model_idx]
     subscribers = _execute_model(container, droplet, model_name) or [droplet.id]
 
@@ -254,7 +294,7 @@ def _handle_subscriber(container: Container, droplet_id: int):
         # Breadth-first: each pass executes one model and requeues if more remain.
         droplet.next_model = (model_idx + 1) % model_count
         initialize_droplet_subscriptions(container, droplet)
-        needs_requeue = droplet.next_model != 0
+        needs_requeue = _next_allowed_model_index(droplet, allowed_indices) is not None
     else:
         _remove_droplet_from_subscriptions(container, droplet_id)
         needs_requeue = False
@@ -269,7 +309,7 @@ def _handle_subscriber(container: Container, droplet_id: int):
     return subscribers, needs_requeue
 
 
-def run_subscriber_cycle(container: Container, initial_subscribers):
+def run_subscriber_cycle(container: Container, initial_subscribers, trigger: str = "all"):
     queue = deque()
     in_queue = set()
     executed_counts = {}
@@ -278,7 +318,7 @@ def run_subscriber_cycle(container: Container, initial_subscribers):
         droplet = next((d for d in container.droplets if d.id == subscriber_id), None)
         if droplet is None or not droplet.model_order:
             return 0
-        return len(droplet.model_order)
+        return len(_allowed_model_indices(droplet, trigger))
 
     def _enqueue(subscriber_id):
         if subscriber_id in in_queue:
@@ -297,7 +337,7 @@ def run_subscriber_cycle(container: Container, initial_subscribers):
     while queue:
         droplet_id = queue.popleft()
         in_queue.discard(droplet_id)
-        subscribers, needs_requeue = _handle_subscriber(container, droplet_id)
+        subscribers, needs_requeue = _handle_subscriber(container, droplet_id, trigger)
         executed_counts[droplet_id] = executed_counts.get(droplet_id, 0) + 1
 
         for sid in subscribers:
@@ -336,17 +376,18 @@ def step(container: Container):
 
     update_micro_shaker_subscriptions(container)
 
-    # Run one breadth-first model cycle across droplets every time step.
-    run_subscriber_cycle(container, [d.id for d in container.droplets])
+    # Run one breadth-first model cycle for time subscribers every simulation step.
+    run_subscriber_cycle(container, [d.id for d in container.droplets], trigger="time")
 
     update_micro_shaker_subscriptions(container)
 
-    # Bubble dynamics are distance-based and cheap at runtime scale.
-    for bubble in container.bubbles:
-        move_bubble_from_droplet(container, bubble)
-    for bubble in container.bubbles:
-        move_bubble(container, bubble)
-    bubble_merge(container)
+    # Bubble dynamics are caller-based and run every simulation step.
+    for bubble in list(container.bubbles):
+        if bubble in container.bubbles:
+            move_bubble(container, bubble)
+    for bubble in list(container.bubbles):
+        if bubble in container.bubbles:
+            bubble_merge(container, bubble)
 
     for bubble in container.bubbles:
         bubble.age += container.time_step

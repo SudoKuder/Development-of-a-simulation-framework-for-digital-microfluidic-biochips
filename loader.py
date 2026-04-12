@@ -24,6 +24,7 @@ def register_sensor_loader(type_name: str, loader_fn):
 
 
 def _load_heater(data: dict) -> Heater:
+    has_desired_temp = "valueDesiredTemperature" in data
     return Heater(
         id=_get(data, "id", "ID"),
         actuator_id=_get(data, "actuatorID", default=0),
@@ -33,6 +34,7 @@ def _load_heater(data: dict) -> Heater:
         size_y=_get(data, "sizeY", default=0),
         actual_temp=_get(data, "valueActualTemperature", default=20.0),
         desired_temp=_get(data, "valueDesiredTemperature", default=90.0),
+        has_target_setpoint=has_desired_temp,
         power_status=_get(data, "valuePowerStatus", default=0),
     )
 
@@ -132,6 +134,12 @@ def load_platform(filepath: str) -> Container:
             thermal_conductivity=_get(d, "thermalConductivity", "thermal_conductivity", default=0.12),
             electrode_id=_get(d, "electrodeID", "electrode_id", default=-1),
             model_order=_get(d, "modelOrder", "model_order", default=["split", "merge", "temperature", "make_bubble"]),
+            begin_of_time_sensitive_models=_get(
+                d,
+                "beginOfTimeSensitiveModels",
+                "begin_of_time_sensitive_models",
+                default=2,
+            ),
         ))
 
     for a in data.get("actuators", []):
