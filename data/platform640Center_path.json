@@ -9835,8 +9835,8 @@
       "substance_name": "h20",
       "positionX": 200,
       "positionY": 190,
-      "sizeX": 22,
-      "sizeY": 22,
+      "sizeX": 28.3,
+      "sizeY": 28.3,
       "color": "#00FFFF",
       "temperature": 20,
       "electrodeID": 293

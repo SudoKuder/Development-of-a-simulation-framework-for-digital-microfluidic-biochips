@@ -9,12 +9,12 @@ def _parse_args():
     parser = argparse.ArgumentParser(description="Run DMFb simulation GUI")
     parser.add_argument(
         "--platform",
-        default="data/testing/platform_bubble_color_temperature.json",
+        default="data/platform640Center_path.json",
         help="Path to platform JSON",
     )
     parser.add_argument(
         "--program",
-        default="data/testing/program_bubble_color_temperature.txt",
+        default="data/center_path.txt",
         help="Path to BioAssembly program TXT",
     )
     return parser.parse_args()

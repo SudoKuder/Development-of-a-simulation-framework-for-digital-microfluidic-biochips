@@ -1,148 +1,113 @@
-# Development-of-a-simulation-framework-for-digital-microfluidic-biochips
+# Digital Microfluidic Biochip Simulation Framework
 
-## Chapter 7: Simulation Interchangeability
+Python simulation framework for digital microfluidic biochips (DMFb), with:
 
-This project now follows a structured extension pipeline for adding or replacing component behavior safely.
+- Platform loading from JSON.
+- Program execution through a simple VM.
+- Interactive visualization using pygame.
+- Automated tests with pytest.
 
-### 7.1 Add or change an existing model
+This README is optimized for sharing the repository so anyone can run and verify the project quickly.
 
-- Droplet models are resolved through `DROPLET_MODEL_DISPATCH` in `engine.py`.
-- Actuator models are resolved through `ACTUATOR_MODEL_DISPATCH` in `engine.py`.
-- You can replace behavior without changing the simulation loop by calling:
-	- `register_droplet_model(name, fn)`
-	- `register_actuator_model(type_name, fn)`
+## 1) Quick Start
 
-### 7.2 Initialization and datatype
+### Prerequisites
 
-New components must define their datatypes in `datatypes.py` and flow through loader + initialization.
+- Python 3.10+
+- pip
 
-Implemented example: `MicroShaker`
+### Clone and set up
 
-- Required fields include: `name`, `id`, `type`, `position`, `size`, `power_status`, `vibration_frequency`.
-- Runtime subscription IDs are tracked in `subscriptions`.
+```bash
+git clone <your-repo-url>
+cd Development-of-a-simulation-framework-for-digital-microfluidic-biochips
 
-#### 7.2.1 Add a component to JSON
+python -m venv .venv
+source .venv/bin/activate
 
-Add a component to `actuators` with an explicit `type`:
-
-```json
-{
-	"id": 11,
-	"actuatorID": 5,
-	"name": "microShaker",
-	"type": "micro_shaker",
-	"positionX": 10,
-	"positionY": 10,
-	"sizeX": 20,
-	"sizeY": 20,
-	"valueVibrationFrequency": 0.0,
-	"valueDesiredFrequency": 60.0,
-	"valuePowerStatus": 1
-}
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-#### 7.2.2 Add a component to the container
+### Run the simulator
 
-- JSON parsing is handled by registries in `loader.py`:
-	- `register_actuator_loader(type_name, loader_fn)`
-	- `register_sensor_loader(type_name, loader_fn)`
-- Built-in registrations include `heater` and `micro_shaker`.
+```bash
+python main.py
+```
 
-#### 7.2.3 Initialize a component
+Run with custom input files:
 
-- `initialize_actuators` in `engine.py` assigns defaults.
-- `update_micro_shaker_subscriptions` in `models.py` synchronizes affected droplets before/after cycles.
+```bash
+python main.py --platform data/platform640Center_path.json --program data/center_path.txt
+```
 
-### 7.3 Add new models
+## 2) Verify Everything Works
 
-- Droplet execution is breadth-first through a subscriber queue: each queue turn executes one model for that droplet.
-- Each droplet owns its own `model_order` and `next_model` pointer.
-- Action-triggered cycles execute indices before `begin_of_time_sensitive_models`.
-- Time-triggered cycles execute indices from `begin_of_time_sensitive_models` onward.
-- `begin_of_time_sensitive_models` is configurable per droplet via JSON (`beginOfTimeSensitiveModels` / `begin_of_time_sensitive_models`).
+Run the test suite:
 
-#### 7.3.1 Component-specific models
+```bash
+pytest -q
+```
 
-- Add actuator dynamics in `models.py` (example: `micro_shaker_frequency_change`).
-- Register in `ACTUATOR_MODEL_DISPATCH` or via `register_actuator_model`.
-- Actuator models execute every simulation step.
+Expected result: all tests pass.
 
-#### 7.3.2 Component-dependent models
+If you are on a headless Linux server and pygame display initialization fails, run tests only (tests do not require launching the GUI).
 
-- Add dependent droplet logic in `models.py` (example: `droplet_vibration`).
-- Dependent models must return a list of droplet subscriber IDs so breadth-first queue execution remains correct.
-- If a micro-shaker is present, droplets automatically include `vibration` in `model_order` during initialization.
+## 3) Project Structure
 
-### 7.4 Visualizing a component
+Top-level files:
 
-- GUI sketch rendering in `gui.py` now maps actuator visuals by type.
-- `micro_shaker` actuators are drawn with cyan overlays and animated wave rings while powered.
-- Information panel and JSON downloads expose both generic actuator fields and type-specific fields:
-	- `vibration_frequency`
-	- `desired_frequency`
-	- `subscriptions`
+- `main.py`: CLI entry point for loading platform + program and launching the GUI.
+- `engine.py`: Simulation initialization, execution loop, and action handling.
+- `models.py`: Droplet/actuator physics and behavior models.
+- `loader.py`: Platform JSON parsing and object construction.
+- `gui.py`: pygame-based simulation rendering and interaction.
+- `simplevm.py`: Program parser/executor for BioAssembly-like instructions.
+- `datatypes.py`: Core dataclasses for droplets, electrodes, actuators, sensors, etc.
 
-## Quick extension checklist
+Data and tests:
 
-1. Add/extend datatype in `datatypes.py`.
-2. Register JSON loader in `loader.py`.
-3. Initialize defaults/subscriptions in `engine.py` and `models.py`.
-4. Register runtime model in `engine.py` dispatch or via registration function.
-5. Add dependent model(s) that return subscriber droplet IDs.
-6. Add GUI drawing + info panel handling in `gui.py`.
-7. Add tests in `tests/test_engine.py`.
+- `data/showcase/`: Demo platforms and programs.
+- `data/testing/`: Inputs used for scenario-focused testing.
+- `tests/`: Unit tests and test fixtures.
 
-## Chapter 8: Evaluation and Testing
+## 4) Common Commands
 
-This chapter summarizes how the simulation framework was evaluated and which tests were executed to verify correctness and runtime behavior.
+```bash
+# run app with defaults
+python main.py
 
-### 8.1 Runtime and Platform Coverage
+# run app with selected scenario
+python main.py --platform data/showcase/platform_dual_driver.json --program data/showcase/program_dual_driver.txt
 
-- The simulator is implemented in Python and rendered with `pygame`, which supports desktop execution across major operating systems.
-- The current workspace validation was executed on Linux.
-- The architecture (platform JSON + VM instruction input + simulation step loop) is independent of a specific operating system and can be run on other supported Python/`pygame` environments.
+# run all tests
+pytest -q
 
-### 8.2 Unit Testing
+# run one test file
+pytest -q tests/test_engine.py
+```
 
-- Unit tests are implemented with `pytest` in `tests/test_engine.py`.
-- Current status: **14 tests passed**.
-- Covered core functionality includes:
-	- Neighbour discovery (`find_neighbours`) to ensure electrode graph connectivity.
-	- Subscription initialization (`initialize_subscriptions`) so droplets map to valid electrodes.
-	- Droplet group initialization (`recalculate_groups`) so each droplet receives a valid group ID.
-	- Action routing correctness for driver/electrode addressing (`execute_action`).
-	- Split behavior with mass conservation (`test_split_conserves_volume`).
-	- Merge behavior under both permissive and strict overlap conditions.
-	- Bubble lifecycle behavior, including delayed generation and decay cleanup.
-	- Sensor read strictness for color and temperature sensors (`update_sensor_readings`).
-	- Color mixing logic (`blend_colors`).
-	- Loader/runtime coverage for the `micro_shaker` component, including subscription and vibration effects.
+## 5) Dependency Notes
 
-### 8.3 Scenario and Platform Testing
+- Runtime GUI dependency: `pygame`
+- Test dependency: `pytest`
 
-Beyond isolated unit tests, the framework is also exercised through scenario execution using platform JSONs and VM programs in `data/testing/` and `data/showcase/`.
+Dependencies are pinned in `requirements.txt` for reproducible setup.
 
-- Methodology:
-	- Initialize simulation state from a platform file.
-	- Execute instruction queues through `SimpleVM`.
-	- Compare simulation behavior step-by-step against expected physical lab behavior.
-- Example scenario classes used in this repository:
-	- Single-droplet route execution (`platform_small_cross.json` + `program_cross_route.txt`).
-	- Split/merge routing paths (`platform_split_merge.json` + `program_split_merge.txt`).
-	- Demonstration scenarios with actuators and dynamic control (`platform_dual_driver.json`, `platform_heater_bubbles.json`).
+## 6) Troubleshooting
 
-Behaviorally, scenario runs validate:
+- `ModuleNotFoundError`: ensure your virtual environment is activated and dependencies are installed from `requirements.txt`.
+- `python: command not found`: use `python3` instead of `python`, then repeat setup.
+- GUI does not open: verify you are running in a desktop session with display access.
 
-- Heater interaction and droplet temperature evolution.
-- Bubble spawning when high-temperature conditions are sustained.
-- Droplet split/merge transitions under realistic actuation.
-- Color blending when droplets combine.
-- Movement constraints based on droplet size relative to electrode dimensions.
+## 7) Development and Extension Notes
 
-### 8.4 Performance
+Model extension workflow:
 
-Several runtime-oriented improvements were integrated to reduce computation cost per step:
+- Droplet models are dispatched through `DROPLET_MODEL_DISPATCH` in `engine.py`.
+- Actuator models are dispatched through `ACTUATOR_MODEL_DISPATCH` in `engine.py`.
+- Additional behavior can be registered using:
+  - `register_droplet_model(name, fn)`
+  - `register_actuator_model(type_name, fn)`
 
-- Optimized traversal for neighbour discovery and related lookup-heavy paths.
-- Reworked subscription initialization to improve startup behavior on larger platforms.
-- Focused model dispatch through registration maps (instead of hard-coded branching) to keep update cycles maintainable and efficient.
+`MicroShaker` is included as an example extension spanning datatype definition, loader registration, initialization, model execution, and GUI rendering.
