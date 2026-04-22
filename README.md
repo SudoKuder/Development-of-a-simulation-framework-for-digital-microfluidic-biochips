@@ -6,6 +6,7 @@ Python simulation framework for digital microfluidic biochips (DMFb), with:
 - Program execution through a simple VM.
 - Interactive visualization using pygame.
 - Automated tests with pytest.
+- Soil-reagent assay droplets (`nitrogen`, `phosphorus`, `potassium`) with reaction output after merge.
 
 This README is optimized for sharing the repository so anyone can run and verify the project quickly.
 
@@ -80,12 +81,23 @@ python main.py
 # run app with selected scenario
 python main.py --platform data/showcase/platform_dual_driver.json --program data/showcase/program_dual_driver.txt
 
+# run phosphorus reagent showcase
+python main.py --platform data/showcase/platform_soil_phosphorus_reaction.json --program data/showcase/program_soil_phosphorus_reaction.txt
+
+# run potassium reagent showcase
+python main.py --platform data/showcase/platform_soil_potassium_reaction.json --program data/showcase/program_soil_potassium_reaction.txt
+
 # run all tests
 pytest -q
 
 # run one test file
 pytest -q tests/test_engine.py
+
+# generate before/after soil droplet merge snapshots
+python soil_health_snapshot_demo.py
 ```
+
+The soil demo writes `data/showcase/soil_merge_before.png` and `data/showcase/soil_merge_after.png`.
 
 ## 5) Dependency Notes
 
@@ -101,6 +113,30 @@ Dependencies are pinned in `requirements.txt` for reproducible setup.
 - GUI does not open: verify you are running in a desktop session with display access.
 
 ## 7) Development and Extension Notes
+
+Soil reagent assay support:
+
+- A droplet can act as a reagent by setting `reagentType` in platform JSON to one of `nitrogen`, `phosphorus`, or `potassium`.
+- When a reagent droplet merges with a soil droplet (`isSoilSample: true`), the simulator computes the assay reaction text using soil NPK levels.
+- Reaction text is stored in droplet field `reaction_result` and shown in GUI droplet details / NPK overlay.
+
+Example droplet JSON fragment:
+
+```json
+{
+  "id": 2,
+  "name": "Nitrogen Reagent",
+  "positionX": 210,
+  "positionY": 70,
+  "sizeX": 21,
+  "sizeY": 21,
+  "color": "#f2d24c",
+  "volume": 20.0,
+  "electrodeID": 730,
+  "isSoilSample": false,
+  "reagentType": "nitrogen"
+}
+```
 
 Model extension workflow:
 

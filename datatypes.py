@@ -1,6 +1,93 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+
+def _clamp01(value: float) -> float:
+    return max(0.0, min(1.0, value))
+
+
+def score_nitrogen(value: float) -> str:
+    if value < 0.40:
+        return "Low"
+    if value <= 0.80:
+        return "Medium"
+    return "High"
+
+
+def score_phosphorus(value: float) -> str:
+    if value < 0.30:
+        return "Low"
+    if value <= 0.70:
+        return "Medium"
+    return "High"
+
+
+def score_potassium(value: float) -> str:
+    if value < 50.0:
+        return "Low"
+    if value <= 100.0:
+        return "Medium"
+    return "High"
+
+
+def soil_color_from_npk(nitrogen: float, phosphorus: float, potassium: float) -> str:
+    """Map NPK concentrations into a stable visible color for soil droplets."""
+    n_norm = _clamp01(nitrogen / 1.0)
+    p_norm = _clamp01(phosphorus / 1.0)
+    k_norm = _clamp01(potassium / 150.0)
+
+    # Base soil tone shifted by nutrient makeup.
+    r = int(max(0, min(255, 90 + 120 * k_norm + 35 * p_norm)))
+    g = int(max(0, min(255, 68 + 140 * n_norm + 20 * k_norm)))
+    b = int(max(0, min(255, 45 + 120 * p_norm + 10 * n_norm)))
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+REAGENT_NONE = "none"
+REAGENT_NITROGEN = "nitrogen"
+REAGENT_PHOSPHORUS = "phosphorus"
+REAGENT_POTASSIUM = "potassium"
+
+
+def normalize_reagent_type(value: Optional[str]) -> str:
+    if value is None:
+        return REAGENT_NONE
+    normalized = str(value).strip().lower()
+    if normalized in {REAGENT_NITROGEN, REAGENT_PHOSPHORUS, REAGENT_POTASSIUM}:
+        return normalized
+    return REAGENT_NONE
+
+
+def is_reagent_type(value: Optional[str]) -> bool:
+    return normalize_reagent_type(value) != REAGENT_NONE
+
+
+def soil_reagent_reaction(reagent_type: str, nitrogen: float, phosphorus: float, potassium: float):
+    """Return reaction text and optional visual color for soil-reagent assays."""
+    reagent = normalize_reagent_type(reagent_type)
+    if reagent == REAGENT_NITROGEN:
+        if nitrogen < 0.40:
+            return "No color change (Nitrogen Low)", None
+        if nitrogen <= 0.80:
+            return "Light color change (Nitrogen Medium)", "#f4e8aa"
+        return "Strong color change (Nitrogen High)", "#f2d24c"
+
+    if reagent == REAGENT_PHOSPHORUS:
+        if phosphorus < 0.30:
+            return "No color change (Phosphorus Low)", None
+        if phosphorus <= 0.70:
+            return "Light blue color (Phosphorus Medium)", "#7fb7ff"
+        return "Deep blue color (Phosphorus High)", "#1f4da5"
+
+    if reagent == REAGENT_POTASSIUM:
+        if potassium < 50.0:
+            return "No turbidity (Potassium Low)", None
+        if potassium <= 100.0:
+            return "Moderate turbidity (Potassium Medium)", "#c8d0d8"
+        return "Strong turbidity (Potassium High)", "#9ca5ae"
+
+    return "No reagent reaction", None
+
 @dataclass
 class Electrode:
     id: int
@@ -39,6 +126,12 @@ class Droplet:
     last_bubble_time: float = -1e9
     bubble_cooldown: float = 1.0
     accumulatingBubbleEscapeVolume: float = 0.0
+    is_soil_sample: bool = False
+    nitrogen: float = 0.0
+    phosphorus: float = 0.0
+    potassium: float = 0.0
+    reagent_type: str = REAGENT_NONE
+    reaction_result: str = ""
 
 @dataclass
 class Bubble:

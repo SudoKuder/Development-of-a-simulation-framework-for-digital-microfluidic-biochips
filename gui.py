@@ -5,7 +5,17 @@ from collections import defaultdict
 
 import pygame
 
-from datatypes import ColorSensor, Container, Droplet, Electrode, MicroShaker, TemperatureSensor
+from datatypes import (
+    ColorSensor,
+    Container,
+    Droplet,
+    Electrode,
+    MicroShaker,
+    TemperatureSensor,
+    is_reagent_type,
+    soil_color_from_npk,
+    soil_reagent_reaction,
+)
 from engine import step
 
 SCALE = 2
@@ -219,6 +229,12 @@ class GUIBroker:
                     "volume": d.volume,
                     "color": d.color,
                     "electrode_id": d.electrode_id,
+                    "is_soil_sample": d.is_soil_sample,
+                    "nitrogen": d.nitrogen,
+                    "phosphorus": d.phosphorus,
+                    "potassium": d.potassium,
+                    "reagent_type": getattr(d, "reagent_type", "none"),
+                    "reaction_result": getattr(d, "reaction_result", ""),
                 }
                 for d in self.container.droplets
             ],
@@ -292,6 +308,7 @@ class SimulationGUI:
         self.control_buttons = {}
         self.info_edit_rects = {}
         self.info_edit_fields = {}
+        self.show_npk_overlay = False
 
         self.multi_select_menu = None
         self.edit_mode = False
@@ -510,6 +527,9 @@ class SimulationGUI:
                 radius = max(2, int(min(b.size_x, b.size_y) * SCALE / 2))
                 pygame.draw.circle(self.screen, BUBBLE_COLOR, (cx, cy), radius, 1)
 
+        if self.show_npk_overlay:
+            self._draw_npk_overlay()
+
     def _draw_info_panel(self):
         panel_x = self.board_w_px + 220
         panel_rect = pygame.Rect(panel_x, 10, 190, 680)
@@ -591,6 +611,17 @@ class SimulationGUI:
                 ("size", f"({obj.size_x:.1f}, {obj.size_y:.1f})"),
                 ("color", obj.color),
             ]
+            if getattr(obj, "is_soil_sample", False):
+                editable.update({"nitrogen", "phosphorus", "potassium"})
+                pairs.extend([
+                    ("nitrogen", round(getattr(obj, "nitrogen", 0.0), 4)),
+                    ("phosphorus", round(getattr(obj, "phosphorus", 0.0), 4)),
+                    ("potassium", round(getattr(obj, "potassium", 0.0), 4)),
+                ])
+            pairs.extend([
+                ("reagent_type", getattr(obj, "reagent_type", "none")),
+                ("reaction_result", getattr(obj, "reaction_result", "")),
+            ])
             return [(k, v, k in editable) for k, v in pairs]
 
         if kind == "actuator":
@@ -706,6 +737,16 @@ class SimulationGUI:
             self.screen.blit(text, (panel_x + 28, y - 1))
             self.selection_rects[entry["id"]] = pygame.Rect(panel_x + 6, y - 2, 186, 18)
             y += 24
+
+        box = pygame.Rect(panel_x + 8, y, 14, 14)
+        pygame.draw.rect(self.screen, (60, 60, 60), box)
+        pygame.draw.rect(self.screen, PANEL_BORDER, box, 1)
+        if self.show_npk_overlay:
+            pygame.draw.line(self.screen, (20, 220, 120), (box.x + 2, box.y + 7), (box.x + 6, box.y + 11), 2)
+            pygame.draw.line(self.screen, (20, 220, 120), (box.x + 6, box.y + 11), (box.x + 12, box.y + 2), 2)
+        text = self.font.render("Show NPK labels", True, TEXT_COLOR)
+        self.screen.blit(text, (panel_x + 28, y - 1))
+        self.selection_rects["npk_overlay"] = pygame.Rect(panel_x + 6, y - 2, 186, 18)
 
     def _draw_multi_select_menu(self):
         menu = self.multi_select_menu
@@ -833,7 +874,10 @@ class SimulationGUI:
 
         for selection_id, rect in self.selection_rects.items():
             if rect.collidepoint(pos):
-                self.broker.toggle(selection_id)
+                if selection_id == "npk_overlay":
+                    self.show_npk_overlay = not self.show_npk_overlay
+                else:
+                    self.broker.toggle(selection_id)
                 return
 
         if self.edit_mode:
@@ -954,6 +998,12 @@ class SimulationGUI:
             elif key == "color":
                 if raw.startswith("#") and len(raw) == 7:
                     target.color = raw
+            elif key == "nitrogen":
+                target.nitrogen = max(0.0, float(raw))
+            elif key == "phosphorus":
+                target.phosphorus = max(0.0, float(raw))
+            elif key == "potassium":
+                target.potassium = max(0.0, float(raw))
             elif key == "desired_temp":
                 target.desired_temp = float(raw)
                 target.has_target_setpoint = True
@@ -961,6 +1011,25 @@ class SimulationGUI:
                 target.power_status = int(raw)
             elif key == "desired_frequency":
                 target.desired_frequency = max(0.0, float(raw))
+
+            # Keep visual assay state consistent after manual NPK edits.
+            if getattr(target, "is_soil_sample", False):
+                if is_reagent_type(getattr(target, "reagent_type", "none")):
+                    reaction_text, reaction_color = soil_reagent_reaction(
+                        target.reagent_type,
+                        target.nitrogen,
+                        target.phosphorus,
+                        target.potassium,
+                    )
+                    target.reaction_result = reaction_text
+                    target.color = reaction_color if reaction_color is not None else soil_color_from_npk(
+                        target.nitrogen,
+                        target.phosphorus,
+                        target.potassium,
+                    )
+                else:
+                    target.reaction_result = ""
+                    target.color = soil_color_from_npk(target.nitrogen, target.phosphorus, target.potassium)
         except ValueError:
             self.download_feedback = "Invalid edit value"
 
@@ -1058,15 +1127,75 @@ class SimulationGUI:
         pygame.draw.ellipse(self.screen, hex_to_rgb(droplet.color), rect)
         pygame.draw.ellipse(self.screen, (0, 0, 0), rect, 2)
 
+    def _draw_npk_overlay(self):
+        for droplet in self.broker.board["droplets"]:
+            if getattr(droplet, "is_soil_sample", False):
+                label = (
+                    f"N:{getattr(droplet, 'nitrogen', 0.0):.2f} "
+                    f"P:{getattr(droplet, 'phosphorus', 0.0):.2f} "
+                    f"K:{getattr(droplet, 'potassium', 0.0):.1f}"
+                )
+                reaction = getattr(droplet, "reaction_result", "")
+                if reaction:
+                    label = f"{label} | {reaction}"
+            else:
+                reagent_type = str(getattr(droplet, "reagent_type", "none") or "none").strip().lower()
+                if reagent_type in ("", "none"):
+                    continue
+                label = f"Reagent: {reagent_type}"
+
+            text = self.font.render(label, True, (235, 235, 235))
+            tx = int(droplet.x * SCALE - text.get_width() / 2)
+            ty = int(SKETCH_HEADER_H + droplet.y * SCALE + droplet.size_y * SCALE / 2 + 4)
+            bg = pygame.Rect(tx - 2, ty - 1, text.get_width() + 4, text.get_height() + 2)
+            pygame.draw.rect(self.screen, (20, 20, 20), bg)
+            pygame.draw.rect(self.screen, (70, 70, 70), bg, 1)
+            self.screen.blit(text, (tx, ty))
+
     def _draw_group_droplet_fallback(self, group):
         fill = group.get("color", (255, 255, 255))
-        for droplet in group.get("droplets", []):
+        droplets = group.get("droplets", [])
+        if not droplets:
+            return
+
+        # Build a local alpha mask so touching droplets render as one merged silhouette.
+        margin = 4
+        rects = []
+        min_x = float("inf")
+        min_y = float("inf")
+        max_x = float("-inf")
+        max_y = float("-inf")
+
+        for droplet in droplets:
             cx = int(droplet.x * SCALE)
             cy = int(SKETCH_HEADER_H + droplet.y * SCALE)
             rx = max(1, int(droplet.size_x * SCALE / 2))
             ry = max(1, int(droplet.size_y * SCALE / 2))
             rect = pygame.Rect(cx - rx, cy - ry, 2 * rx, 2 * ry)
-            pygame.draw.ellipse(self.screen, fill, rect)
+            rects.append(rect)
+            min_x = min(min_x, rect.left)
+            min_y = min(min_y, rect.top)
+            max_x = max(max_x, rect.right)
+            max_y = max(max_y, rect.bottom)
+
+        local_w = max(1, int(max_x - min_x + 2 * margin))
+        local_h = max(1, int(max_y - min_y + 2 * margin))
+        local = pygame.Surface((local_w, local_h), pygame.SRCALPHA)
+
+        for rect in rects:
+            shifted = pygame.Rect(rect.x - int(min_x) + margin, rect.y - int(min_y) + margin, rect.width, rect.height)
+            pygame.draw.ellipse(local, (*fill, 255), shifted)
+
+        self.screen.blit(local, (int(min_x) - margin, int(min_y) - margin))
+
+        mask = pygame.mask.from_surface(local)
+        outline = mask.outline()
+        if len(outline) >= 3:
+            points = [(x + int(min_x) - margin, y + int(min_y) - margin) for x, y in outline]
+            pygame.draw.polygon(self.screen, (0, 0, 0), points, 2)
+            return
+
+        for rect in rects:
             pygame.draw.ellipse(self.screen, (0, 0, 0), rect, 2)
 
     def _group_contour_is_valid(self, pts, droplets):

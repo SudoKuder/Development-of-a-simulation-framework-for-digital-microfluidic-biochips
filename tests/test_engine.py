@@ -9,7 +9,7 @@ from engine import (
     run_subscriber_cycle,
     step,
 )
-from datatypes import ColorSensor, Container, Droplet, Electrode, Heater, TemperatureSensor
+from datatypes import ColorSensor, Container, Droplet, Electrode, Heater, TemperatureSensor, soil_color_from_npk
 from loader import load_platform
 from models import (
     blend_colors,
@@ -318,6 +318,105 @@ def test_merge_on_electrode_requires_complete_overlap():
     droplet_merge(container, larger)
 
     assert len(container.droplets) == 2
+
+
+def test_soil_merge_updates_npk_and_color():
+    e1 = Electrode(id=1, electrode_id=1, driver_id=0, x=0, y=0, size_x=20, size_y=20, status=0, neighbours=[2])
+    e2 = Electrode(id=2, electrode_id=2, driver_id=0, x=20, y=0, size_x=20, size_y=20, status=0, neighbours=[1])
+
+    larger = Droplet(
+        id=1,
+        name="soil_large",
+        x=15,
+        y=10,
+        size_x=22,
+        size_y=22,
+        color="#ffffff",
+        volume=22.0,
+        electrode_id=1,
+        is_soil_sample=True,
+        nitrogen=0.75,
+        phosphorus=0.40,
+        potassium=60.0,
+    )
+    smaller = Droplet(
+        id=2,
+        name="soil_small",
+        x=24,
+        y=10,
+        size_x=10,
+        size_y=10,
+        color="#ffffff",
+        volume=12.0,
+        electrode_id=2,
+        is_soil_sample=True,
+        nitrogen=0.95,
+        phosphorus=0.70,
+        potassium=120.0,
+    )
+
+    container = Container(electrodes=[e1, e2], droplets=[larger, smaller])
+    droplet_merge(container, larger)
+
+    assert len(container.droplets) == 1
+    merged = container.droplets[0]
+    assert merged.is_soil_sample
+    assert merged.nitrogen == pytest.approx((0.75 * 22.0 + 0.95 * 12.0) / 34.0, rel=1e-6)
+    assert merged.phosphorus == pytest.approx((0.40 * 22.0 + 0.70 * 12.0) / 34.0, rel=1e-6)
+    assert merged.potassium == pytest.approx((60.0 * 22.0 + 120.0 * 12.0) / 34.0, rel=1e-6)
+    assert merged.color == soil_color_from_npk(merged.nitrogen, merged.phosphorus, merged.potassium)
+
+
+@pytest.mark.parametrize(
+    "reagent_type,expected",
+    [
+        ("nitrogen", "Light color change (Nitrogen Medium)"),
+        ("phosphorus", "Light blue color (Phosphorus Medium)"),
+        ("potassium", "Moderate turbidity (Potassium Medium)"),
+    ],
+)
+def test_soil_reagent_merge_applies_reaction_without_npk_dilution(reagent_type, expected):
+    e1 = Electrode(id=1, electrode_id=1, driver_id=0, x=0, y=0, size_x=20, size_y=20, status=0, neighbours=[2])
+    e2 = Electrode(id=2, electrode_id=2, driver_id=0, x=20, y=0, size_x=20, size_y=20, status=0, neighbours=[1])
+
+    soil = Droplet(
+        id=1,
+        name="soil",
+        x=15,
+        y=10,
+        size_x=20,
+        size_y=20,
+        color="#ffffff",
+        volume=20.0,
+        electrode_id=1,
+        is_soil_sample=True,
+        nitrogen=0.65,
+        phosphorus=0.50,
+        potassium=85.0,
+    )
+    reagent = Droplet(
+        id=2,
+        name=f"{reagent_type}_reagent",
+        x=24,
+        y=10,
+        size_x=10,
+        size_y=10,
+        color="#dddddd",
+        volume=5.0,
+        electrode_id=2,
+        reagent_type=reagent_type,
+    )
+
+    container = Container(electrodes=[e1, e2], droplets=[soil, reagent])
+    droplet_merge(container, soil)
+
+    assert len(container.droplets) == 1
+    merged = container.droplets[0]
+    assert merged.is_soil_sample
+    assert merged.nitrogen == pytest.approx(0.65, rel=1e-6)
+    assert merged.phosphorus == pytest.approx(0.50, rel=1e-6)
+    assert merged.potassium == pytest.approx(85.0, rel=1e-6)
+    assert merged.reaction_result == expected
 
 
 def test_merge_updates_entire_group_color_and_temperature():

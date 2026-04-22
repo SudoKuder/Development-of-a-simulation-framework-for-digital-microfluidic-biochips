@@ -1,5 +1,19 @@
 from typing import List, Optional, Tuple
-from datatypes import Bubble, ColorSensor, Container, Droplet, Electrode, Heater, MicroShaker, TemperatureSensor
+from datatypes import (
+    Bubble,
+    ColorSensor,
+    Container,
+    Droplet,
+    Electrode,
+    Heater,
+    MicroShaker,
+    REAGENT_NONE,
+    TemperatureSensor,
+    is_reagent_type,
+    normalize_reagent_type,
+    soil_reagent_reaction,
+    soil_color_from_npk,
+)
 import math
 
 ROOM_TEMP_C = 20.0
@@ -8,6 +22,74 @@ BUBBLE_TRIGGER_SECONDS = 0.5
 BUBBLE_DROP_VOLUME_THRESHOLD = 10.0
 EVAPORATION_RATE_PER_SECOND = 0.10
 MICRO_SHAKER_RAMP_HZ_PER_SECOND = 35.0
+
+
+def _mix_weighted(a: float, b: float, wa: float, wb: float) -> float:
+    total = max(1e-9, wa + wb)
+    return ((a * wa) + (b * wb)) / total
+
+
+def _mix_npk(first: Droplet, second: Droplet, first_volume: float, second_volume: float) -> Tuple[float, float, float]:
+    return (
+        _mix_weighted(first.nitrogen, second.nitrogen, first_volume, second_volume),
+        _mix_weighted(first.phosphorus, second.phosphorus, first_volume, second_volume),
+        _mix_weighted(first.potassium, second.potassium, first_volume, second_volume),
+    )
+
+
+def _apply_soil_color(droplet: Droplet) -> None:
+    if droplet.is_soil_sample:
+        droplet.color = soil_color_from_npk(droplet.nitrogen, droplet.phosphorus, droplet.potassium)
+
+
+def _soil_npk_from_merge(first: Droplet, second: Droplet, first_volume: float, second_volume: float) -> Tuple[float, float, float]:
+    first_soil = bool(first.is_soil_sample)
+    second_soil = bool(second.is_soil_sample)
+
+    if first_soil and second_soil:
+        return _mix_npk(first, second, first_volume, second_volume)
+    if first_soil:
+        return (first.nitrogen, first.phosphorus, first.potassium)
+    if second_soil:
+        return (second.nitrogen, second.phosphorus, second.potassium)
+    return _mix_npk(first, second, first_volume, second_volume)
+
+
+def _reagent_reaction_for_soil(soil: Droplet, reagent: Droplet):
+    if not soil.is_soil_sample:
+        return "", None
+    reagent_type = normalize_reagent_type(getattr(reagent, "reagent_type", REAGENT_NONE))
+    if not is_reagent_type(reagent_type):
+        return "", None
+    return soil_reagent_reaction(reagent_type, soil.nitrogen, soil.phosphorus, soil.potassium)
+
+
+def _apply_soil_or_reagent_outcome(target: Droplet, first: Droplet, second: Droplet, first_volume: float, second_volume: float) -> None:
+    if not (first.is_soil_sample or second.is_soil_sample):
+        return
+
+    mix_n, mix_p, mix_k = _soil_npk_from_merge(first, second, first_volume, second_volume)
+    target.is_soil_sample = True
+    target.nitrogen = mix_n
+    target.phosphorus = mix_p
+    target.potassium = mix_k
+
+    reaction_text = ""
+    reaction_color = None
+    reaction_reagent = REAGENT_NONE
+    if first.is_soil_sample and is_reagent_type(getattr(second, "reagent_type", REAGENT_NONE)):
+        reaction_text, reaction_color = _reagent_reaction_for_soil(target, second)
+        reaction_reagent = normalize_reagent_type(getattr(second, "reagent_type", REAGENT_NONE))
+    elif second.is_soil_sample and is_reagent_type(getattr(first, "reagent_type", REAGENT_NONE)):
+        reaction_text, reaction_color = _reagent_reaction_for_soil(target, first)
+        reaction_reagent = normalize_reagent_type(getattr(first, "reagent_type", REAGENT_NONE))
+
+    target.reaction_result = reaction_text
+    target.reagent_type = reaction_reagent
+    if reaction_color is None:
+        _apply_soil_color(target)
+    else:
+        target.color = reaction_color
 
 
 def droplet_split(container: Container, caller: Droplet) -> List[int]:
@@ -96,7 +178,15 @@ def _spawn_split_droplet(
         thermal_conductivity=caller.thermal_conductivity,
         group_id=caller.group_id if keep_group else -1,
         electrode_id=target.id,
+        is_soil_sample=caller.is_soil_sample,
+        nitrogen=caller.nitrogen,
+        phosphorus=caller.phosphorus,
+        potassium=caller.potassium,
+        reagent_type=caller.reagent_type,
+        reaction_result=caller.reaction_result,
     )
+    if not child.reaction_result:
+        _apply_soil_color(child)
     container.droplets.append(child)
     return child.id
 
@@ -148,12 +238,26 @@ def _normalize_group_state(container: Container, group_id: int) -> None:
         / max(1e-9, total_heat_capacity)
     )
 
+    group_has_soil = any(d.is_soil_sample for d in group)
     mixed = group[0].color
     mixed_w = max(1e-9, group[0].volume)
-    for d in group[1:]:
-        w = max(1e-9, d.volume)
-        mixed = blend_colors(mixed, d.color, w1=mixed_w, w2=w)
-        mixed_w += w
+    soil_members = [d for d in group if d.is_soil_sample]
+    soil_n = soil_members[0].nitrogen if soil_members else group[0].nitrogen
+    soil_p = soil_members[0].phosphorus if soil_members else group[0].phosphorus
+    soil_k = soil_members[0].potassium if soil_members else group[0].potassium
+    if group_has_soil and soil_members:
+        mixed_w = max(1e-9, soil_members[0].volume)
+        for d in soil_members[1:]:
+            w = max(1e-9, d.volume)
+            soil_n = _mix_weighted(soil_n, d.nitrogen, mixed_w, w)
+            soil_p = _mix_weighted(soil_p, d.phosphorus, mixed_w, w)
+            soil_k = _mix_weighted(soil_k, d.potassium, mixed_w, w)
+            mixed_w += w
+    else:
+        for d in group[1:]:
+            w = max(1e-9, d.volume)
+            mixed = blend_colors(mixed, d.color, w1=mixed_w, w2=w)
+            mixed_w += w
 
     area_weights = []
     for d in group:
@@ -167,7 +271,21 @@ def _normalize_group_state(container: Container, group_id: int) -> None:
         d.volume = new_v
         _scale_droplet_by_volume(d, old_v, new_v)
         d.temperature = avg_temp
-        d.color = mixed
+        if group_has_soil:
+            d.is_soil_sample = True
+            d.nitrogen = soil_n
+            d.phosphorus = soil_p
+            d.potassium = soil_k
+            d_reagent = normalize_reagent_type(getattr(d, "reagent_type", REAGENT_NONE))
+            if is_reagent_type(d_reagent):
+                d.reaction_result, reaction_color = soil_reagent_reaction(d_reagent, d.nitrogen, d.phosphorus, d.potassium)
+                d.color = reaction_color if reaction_color is not None else soil_color_from_npk(d.nitrogen, d.phosphorus, d.potassium)
+            else:
+                d.reaction_result = ""
+                _apply_soil_color(d)
+        else:
+            d.color = mixed
+            d.reaction_result = ""
 
 
 def droplet_merge(container: Container, caller: Droplet) -> List[int]:
@@ -185,6 +303,7 @@ def droplet_merge(container: Container, caller: Droplet) -> List[int]:
                 old_v = max(1e-9, recipient.volume)
                 recipient.volume = max(0.05, recipient.volume + share)
                 _scale_droplet_by_volume(recipient, old_v, recipient.volume)
+                _apply_soil_or_reagent_outcome(recipient, recipient, caller, old_v, share)
 
         _remove_droplet(container, caller.id)
         recalculate_groups(container)
@@ -213,7 +332,10 @@ def droplet_merge(container: Container, caller: Droplet) -> List[int]:
         caller.x = (caller.x * caller.volume + other.x * other.volume) / total_volume
         caller.y = (caller.y * caller.volume + other.y * other.volume) / total_volume
         caller.temperature = update_group_temperature(container, caller, other)
-        caller.color = update_group_color(container, caller, other)
+        if caller.is_soil_sample or other.is_soil_sample:
+            _apply_soil_or_reagent_outcome(caller, caller, other, caller.volume, other.volume)
+        else:
+            caller.color = update_group_color(container, caller, other)
         caller.volume = total_volume
         _scale_droplet_by_volume(caller, old_large_volume, total_volume)
 
@@ -224,7 +346,29 @@ def droplet_merge(container: Container, caller: Droplet) -> List[int]:
             if member.group_id != caller.group_id:
                 continue
             member.temperature = caller.temperature
-            member.color = caller.color
+            if caller.is_soil_sample:
+                member.is_soil_sample = True
+                member.nitrogen = caller.nitrogen
+                member.phosphorus = caller.phosphorus
+                member.potassium = caller.potassium
+                member_reagent = normalize_reagent_type(getattr(member, "reagent_type", REAGENT_NONE))
+                if is_reagent_type(member_reagent):
+                    member.reaction_result, reaction_color = soil_reagent_reaction(
+                        member_reagent,
+                        member.nitrogen,
+                        member.phosphorus,
+                        member.potassium,
+                    )
+                    member.color = reaction_color if reaction_color is not None else soil_color_from_npk(
+                        member.nitrogen,
+                        member.phosphorus,
+                        member.potassium,
+                    )
+                else:
+                    member.reaction_result = ""
+                    _apply_soil_color(member)
+            else:
+                member.color = caller.color
 
         _remove_droplet(container, other.id)
         merged = True
@@ -306,7 +450,31 @@ def update_group_color(container: Container, group_droplet: Droplet, incoming_dr
     ]
 
     if not group:
+        if incoming_droplet.is_soil_sample:
+            return soil_color_from_npk(
+                incoming_droplet.nitrogen,
+                incoming_droplet.phosphorus,
+                incoming_droplet.potassium,
+            )
         return incoming_droplet.color
+
+    if any(d.is_soil_sample for d in group) or incoming_droplet.is_soil_sample:
+        soil_n = group[0].nitrogen
+        soil_p = group[0].phosphorus
+        soil_k = group[0].potassium
+        group_volume = max(1e-9, group[0].volume)
+        for d in group[1:]:
+            d_volume = max(1e-9, d.volume)
+            soil_n = _mix_weighted(soil_n, d.nitrogen, group_volume, d_volume)
+            soil_p = _mix_weighted(soil_p, d.phosphorus, group_volume, d_volume)
+            soil_k = _mix_weighted(soil_k, d.potassium, group_volume, d_volume)
+            group_volume += d_volume
+
+        incoming_volume = max(1e-9, incoming_droplet.volume)
+        soil_n = _mix_weighted(soil_n, incoming_droplet.nitrogen, group_volume, incoming_volume)
+        soil_p = _mix_weighted(soil_p, incoming_droplet.phosphorus, group_volume, incoming_volume)
+        soil_k = _mix_weighted(soil_k, incoming_droplet.potassium, group_volume, incoming_volume)
+        return soil_color_from_npk(soil_n, soil_p, soil_k)
 
     group_color = group[0].color
     group_volume = max(1e-9, group[0].volume)

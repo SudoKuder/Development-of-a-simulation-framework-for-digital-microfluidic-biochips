@@ -1,0 +1,9 @@
+# Split one soil droplet (at 725) into three parts at 724, 725, 726.
+setel 0 725
+setel 0 724
+setel 0 726
+
+# Move each reagent onto one soil part and merge.
+clrel 0 723
+clrel 0 715
+clrel 0 727

@@ -9,12 +9,12 @@ def _parse_args():
     parser = argparse.ArgumentParser(description="Run DMFb simulation GUI")
     parser.add_argument(
         "--platform",
-        default="data/platform640Center_path.json",
+        default="data/showcase/platform_soil_npk_reaction.json",
         help="Path to platform JSON",
     )
     parser.add_argument(
         "--program",
-        default="data/center_path.txt",
+        default="data/showcase/program_soil_npk_reaction.txt",
         help="Path to BioAssembly program TXT",
     )
     return parser.parse_args()

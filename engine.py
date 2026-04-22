@@ -1,5 +1,15 @@
 from collections import deque
-from datatypes import Container, Droplet, Electrode, Heater, MicroShaker, ColorSensor, TemperatureSensor
+from datatypes import (
+    ColorSensor,
+    Container,
+    Droplet,
+    Electrode,
+    Heater,
+    MicroShaker,
+    TemperatureSensor,
+    normalize_reagent_type,
+    soil_color_from_npk,
+)
 from models import (
     bubble_merge,
     droplet_vibration,
@@ -191,6 +201,9 @@ def initialize_droplets(container: Container):
     for idx, droplet in enumerate(container.droplets):
         droplet.group_id = idx
         droplet.next_model = 0
+        droplet.reagent_type = normalize_reagent_type(getattr(droplet, "reagent_type", "none"))
+        if droplet.is_soil_sample:
+            droplet.color = soil_color_from_npk(droplet.nitrogen, droplet.phosphorus, droplet.potassium)
         if not droplet.model_order:
             droplet.model_order = ["split", "merge", "temperature", "make_bubble"]
         droplet.begin_of_time_sensitive_models = max(

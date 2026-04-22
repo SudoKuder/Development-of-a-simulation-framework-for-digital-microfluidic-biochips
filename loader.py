@@ -119,6 +119,17 @@ def load_platform(filepath: str) -> Container:
         size_x = _get(d, "sizeX", default=0.0)
         size_y = _get(d, "sizeY", default=0.0)
         inferred_volume = max(1.0, (size_x * size_y) / 10.0)
+        is_soil_sample = bool(_get(d, "isSoilSample", "is_soil_sample", default=False))
+        nitrogen = float(_get(d, "nitrogen", "nitrogenValue", default=0.0))
+        phosphorus = float(_get(d, "phosphorus", "phosphorusValue", default=0.0))
+        potassium = float(_get(d, "potassium", "potassiumValue", default=0.0))
+        reagent_type = normalize_reagent_type(
+            _get(d, "reagentType", "reagent_type", "reagent", default=REAGENT_NONE)
+        )
+        reaction_result = str(_get(d, "reactionResult", "reaction_result", default=""))
+        color = _get(d, "color", default="#FFFFFF")
+        if is_soil_sample:
+            color = soil_color_from_npk(nitrogen, phosphorus, potassium)
         container.droplets.append(Droplet(
             id=_get(d, "id", "ID"),
             name=_get(d, "name", default="droplet"),
@@ -126,7 +137,7 @@ def load_platform(filepath: str) -> Container:
             y=_get(d, "positionY", default=0.0),
             size_x=size_x,
             size_y=size_y,
-            color=_get(d, "color", default="#FFFFFF"),
+            color=color,
             temperature=_get(d, "temperature", default=20.0),
             volume=_get(d, "volume", default=inferred_volume),
             density=_get(d, "density", default=1.0),
@@ -140,6 +151,12 @@ def load_platform(filepath: str) -> Container:
                 "begin_of_time_sensitive_models",
                 default=2,
             ),
+            is_soil_sample=is_soil_sample,
+            nitrogen=nitrogen,
+            phosphorus=phosphorus,
+            potassium=potassium,
+            reagent_type=reagent_type,
+            reaction_result=reaction_result,
         ))
 
     for a in data.get("actuators", []):

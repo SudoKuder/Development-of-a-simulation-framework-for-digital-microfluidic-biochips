@@ -1,0 +1,24 @@
+setel 0 721
+setel 0 722
+clrel 0 721
+setel 0 723
+clrel 0 722
+setel 0 724
+clrel 0 723
+setel 0 725
+clrel 0 724
+
+setel 0 730
+setel 0 729
+clrel 0 730
+setel 0 728
+clrel 0 729
+setel 0 727
+clrel 0 728
+setel 0 737
+setel 0 726
+clrel 0 737
+clrel 0 727
+
+setel 0 726
+clrel 0 725
